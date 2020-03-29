@@ -14,9 +14,9 @@ def index():
 @main.route("/home")
 @login_required
 def home():
-    if current_user.area == Area.Lab:
+    if current_user.area == Area.Lab.value:
         return redirect(url_for('main.lab_home'))
-    elif current_user.area == Area.Bod:
+    elif current_user.area == Area.Bod.value:
         return redirect(url_for('main.bod_home'))
     else:
         return render_template('home.html', title='Home')
@@ -35,26 +35,26 @@ def home_historial():
 @login_required
 def lab_home():
     check_lab()
-    quimicos = Quimico.query.filter_by(area=Area.Lab).all()
+    quimicos = Quimico.query.filter_by(area=Area.Lab.value).all()
     return render_template('lab/home.html', title='Lab Home', quimicos=quimicos, area='Lab', user=current_user)
 
 @main.route("/lab/historial")
 @login_required
 def lab_home_historial():
     check_lab()
-    historiales = HistorialQuimicos.query.filter_by(area=Area.Lab).order_by(HistorialQuimicos.fecha_registro.desc()).all()
+    historiales = HistorialQuimicos.query.filter_by(area=Area.Lab.value).order_by(HistorialQuimicos.fecha_registro.desc()).all()
     return render_template('ver_historial.html', historiales=historiales, area='Lab')
 
 @main.route("/bod")
 @login_required
 def bod_home():
     check_bod()
-    quimicos = Quimico.query.filter_by(area=Area.Bod).all()
+    quimicos = Quimico.query.filter_by(area=Area.Bod.value).all()
     return render_template('bod/home.html', title='Bod Home', quimicos=quimicos, area='Bod', user=current_user)
 
 @main.route("/bod/historial")
 @login_required
 def bod_home_historial():
     check_bod()
-    historiales = HistorialQuimicos.query.filter_by(area=Area.Bod).order_by(HistorialQuimicos.fecha_registro.desc()).all()
+    historiales = HistorialQuimicos.query.filter_by(area=Area.Bod.value).order_by(HistorialQuimicos.fecha_registro.desc()).all()
     return render_template('ver_historial.html', historiales=historiales, area='Bod')

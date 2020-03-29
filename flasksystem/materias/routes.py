@@ -1,7 +1,7 @@
-from flask import render_template, url_for, flash, redirect, abort, Blueprint
+from flask import render_template, url_for, flash, redirect, abort, jsonify, Blueprint
 from flask_login import current_user, login_required
 from flasksystem import db
-from flasksystem.models import Materia, HistorialMaterias, Quimico, HistorialQuimicos, Area
+from flasksystem.models import Materia, HistorialMaterias, Quimico, HistorialQuimicos, Area, MateriaSchema
 from flasksystem.materias.forms import MateriaForm, AddMateriaForm, ReduceMateriaForm
 from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_only_lab
 from flasksystem.main.forms import ModBajoStockForm
@@ -17,10 +17,10 @@ def lab_new_materia():
     form = MateriaForm()
     if form.validate_on_submit():
         materia = Materia(nombre=form.nombre.data, codigo=form.codigo.data, medida=form.medida.data, 
-                            bajo_stock=form.bajo_stock.data, area=Area.Lab)
+                            bajo_stock=form.bajo_stock.data, area=Area.Lab.value)
         db.session.add(materia)
         db.session.commit()
-        quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab)
+        quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
         db.session.add(quimico)
         db.session.commit()        
         flash('La materia se ha creado exitosamente!', 'success')
@@ -33,7 +33,7 @@ def lab_new_materia():
 def lab_materia(materia_id):
     check_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     return render_template('materia.html', title=materia.nombre, materia=materia, area='Lab', user=current_user)
 
@@ -42,7 +42,7 @@ def lab_materia(materia_id):
 def lab_alerta_materia(materia_id):
     check_only_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     form = ModBajoStockForm()
     if form.validate_on_submit():
@@ -57,7 +57,7 @@ def lab_alerta_materia(materia_id):
 def lab_home_materia():
     check_lab()
     # materias = Materia.query.filter_by(area=Area.Lab).all() # Esta forma no tiene order_by
-    materias = db.session.query(Materia).filter(Materia.area == Area.Lab).order_by(Materia.id).all()
+    materias = db.session.query(Materia).filter(Materia.area == Area.Lab.value).order_by(Materia.id).all()
     return render_template('ver_materias.html', materias=materias, area='Lab', user=current_user)
 
 @materias.route("/lab/materia/<int:materia_id>/add", methods=['GET', 'POST'])
@@ -65,16 +65,16 @@ def lab_home_materia():
 def lab_add_materia(materia_id):
     check_only_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     form = AddMateriaForm()
     if form.validate_on_submit():
         materia.cantidad += form.cantidad.data
         historial = HistorialMaterias(observacion=form.observacion.data, cantidad=form.cantidad.data,
-                                         materia=materia, user = current_user, tipo='Entrada', area=Area.Lab)
+                                         materia=materia, user = current_user, tipo='Entrada', area=Area.Lab.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab)
+        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la entrada de materia', 'success')
@@ -87,7 +87,7 @@ def lab_add_materia(materia_id):
 def lab_historial_materia_especifico(materia_id):
     check_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     historiales = HistorialMaterias.query.filter_by(materia=materia).order_by(HistorialMaterias.fecha_registro.desc()).all()
     return render_template('historial_materia.html', title='Menu Historial Materia', legend='Menu Historial Materia', 
@@ -97,7 +97,7 @@ def lab_historial_materia_especifico(materia_id):
 @login_required
 def lab_historial_materias():
     check_lab()
-    historiales = HistorialMaterias.query.filter_by(area=Area.Lab).order_by(HistorialMaterias.fecha_registro.desc()).all()
+    historiales = HistorialMaterias.query.filter_by(area=Area.Lab.value).order_by(HistorialMaterias.fecha_registro.desc()).all()
     return render_template('historial_total_materias.html', historiales=historiales, title='Historial Materias', area='Lab')
 
 @materias.route("/lab/materia/<int:materia_id>/reduce", methods=['GET', 'POST'])
@@ -105,7 +105,7 @@ def lab_historial_materias():
 def lab_reduce_materia(materia_id):
     check_only_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     form = ReduceMateriaForm()
     if form.validate_on_submit():
@@ -114,10 +114,10 @@ def lab_reduce_materia(materia_id):
             return redirect(url_for('materias.lab_reduce_materia', materia_id=materia.id))        
         materia.cantidad -= form.cantidad.data
         historial = HistorialMaterias(observacion=form.observacion.data, cantidad=form.cantidad.data, 
-                                        materia=materia, user = current_user, tipo='Salida', area=Area.Lab)
+                                        materia=materia, user = current_user, tipo='Salida', area=Area.Lab.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab)
+        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab.value)
         db.session.add(historial_quimico)
         db.session.commit()        
         flash('Se ha añadido la salida de materia', 'success')
@@ -130,7 +130,7 @@ def lab_reduce_materia(materia_id):
 def lab_delete_materia(materia_id):
     check_only_lab()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Lab:
+    if materia.area != Area.Lab.value:
         return abort(403)
     if materia.formulas != []:
         flash('Esta materia es parte de una o más formulas. Si desea eliminarla por favor elimine la(s) formula(s) de la(s) que es parte', 'danger')
@@ -162,10 +162,10 @@ def bod_new_materia():
     form = MateriaForm()
     if form.validate_on_submit():
         materia = Materia(nombre=form.nombre.data, codigo=form.codigo.data, medida=form.medida.data, 
-                            bajo_stock=form.bajo_stock.data, area=Area.Bod)
+                            bajo_stock=form.bajo_stock.data, area=Area.Bod.value)
         db.session.add(materia)
         db.session.commit()
-        quimico = Quimico(tipo='Materia', materia=materia, area=Area.Bod)
+        quimico = Quimico(tipo='Materia', materia=materia, area=Area.Bod.value)
         db.session.add(quimico)
         db.session.commit()        
         flash('La materia se ha creado exitosamente!', 'success')
@@ -178,7 +178,7 @@ def bod_new_materia():
 def bod_materia(materia_id):
     check_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     return render_template('materia.html', title=materia.nombre, materia=materia, area='Bod', user=current_user)
 
@@ -187,7 +187,7 @@ def bod_materia(materia_id):
 def bod_alerta_materia(materia_id):
     check_only_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     form = ModBajoStockForm()
     if form.validate_on_submit():
@@ -203,7 +203,7 @@ def bod_alerta_materia(materia_id):
 def bod_home_materia():
     check_bod()
     # materias = Materia.query.filter_by(area=Area.Bod).all() # Esta forma no tiene el order_by
-    materias = db.session.query(Materia).filter(Materia.area == Area.Bod).order_by(Materia.id).all()
+    materias = db.session.query(Materia).filter(Materia.area == Area.Bod.value).order_by(Materia.id).all()
     return render_template('ver_materias.html', materias=materias, area='Bod', user=current_user)
 
 @materias.route("/bod/materia/<int:materia_id>/add", methods=['GET', 'POST'])
@@ -211,16 +211,16 @@ def bod_home_materia():
 def bod_add_materia(materia_id):
     check_only_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     form = AddMateriaForm()
     if form.validate_on_submit():
         materia.cantidad += form.cantidad.data
         historial = HistorialMaterias(observacion=form.observacion.data, cantidad=form.cantidad.data, 
-                                        materia=materia, user = current_user, tipo='Entrada', area=Area.Bod)
+                                        materia=materia, user = current_user, tipo='Entrada', area=Area.Bod.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Bod)
+        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Bod.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la salida de materia', 'success')
@@ -233,7 +233,7 @@ def bod_add_materia(materia_id):
 def bod_historial_materia_especifico(materia_id):
     check_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     historiales = HistorialMaterias.query.filter_by(materia=materia).order_by(HistorialMaterias.fecha_registro.desc()).all()
     return render_template('historial_materia.html', title='Menu Historial Materia', legend='Menu Historial Materia', 
@@ -243,7 +243,7 @@ def bod_historial_materia_especifico(materia_id):
 @login_required
 def bod_historial_materias():
     check_bod()
-    historiales = HistorialMaterias.query.filter_by(area=Area.Bod).order_by(HistorialMaterias.fecha_registro.desc()).all()
+    historiales = HistorialMaterias.query.filter_by(area=Area.Bod.value).order_by(HistorialMaterias.fecha_registro.desc()).all()
     return render_template('historial_total_materias.html', historiales=historiales, title='Historial Materias', area='Bod')
 
 @materias.route("/bod/materia/<int:materia_id>/reduce", methods=['GET', 'POST'])
@@ -251,7 +251,7 @@ def bod_historial_materias():
 def bod_reduce_materia(materia_id):
     check_only_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     form = ReduceMateriaForm()
     if form.validate_on_submit():
@@ -260,10 +260,10 @@ def bod_reduce_materia(materia_id):
             return redirect(url_for('materias.bod_reduce_materia', materia_id=materia.id))        
         materia.cantidad -= form.cantidad.data
         historial = HistorialMaterias(observacion=form.observacion.data, cantidad=form.cantidad.data, materia=materia, 
-                                        user = current_user, tipo='Salida', area=Area.Bod)
+                                        user = current_user, tipo='Salida', area=Area.Bod.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Bod)
+        historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Bod.value)
         db.session.add(historial_quimico)
         db.session.commit()        
         flash('Se ha añadido la entrada de materia', 'success')
@@ -276,7 +276,7 @@ def bod_reduce_materia(materia_id):
 def bod_delete_materia(materia_id):
     check_only_bod()
     materia = Materia.query.get_or_404(materia_id)
-    if materia.area != Area.Bod:
+    if materia.area != Area.Bod.value:
         return abort(403)
     if materia.formulas != []:
         flash('Esta materia es parte de una o más formulas. Si desea eliminarla por favor elimine la(s) formula(s) de la(s) que es parte', 'danger')
@@ -295,6 +295,13 @@ def bod_delete_materia(materia_id):
     db.session.commit()
     flash('La materia se ha eliminado', 'success')
     return redirect(url_for('main.bod_home'))
+
+@materias.route("/json")
+def materias_json():
+    one_materia = Materia.query.first()
+    materia_schema = MateriaSchema()
+    output = materia_schema.dump(one_materia)
+    return jsonify({'materia': output})
 
 # ----------------------------------------------------------------------------------------------------------
 

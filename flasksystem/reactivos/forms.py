@@ -50,11 +50,11 @@ class NewFormulaForm(FlaskForm):
     submit = SubmitField('Ingresa')
 
 class LabNewFormulaForm(FlaskForm):
-    materias = QuerySelectMultipleField('Elige Materias',query_factory=lambda: db.session.query(Materia).filter(Materia.area==Area.Lab), get_pk=lambda m: m.id, get_label=lambda m:'id: '+str(m.id) +' | nombre: '+m.nombre+' | codigo: '+m.codigo, validators=[DataRequired()]) #, widget=LazySelect()
+    materias = QuerySelectMultipleField('Elige Materias',query_factory=lambda: db.session.query(Materia).filter(Materia.area==Area.Lab.value), get_pk=lambda m: m.id, get_label=lambda m:'id: '+str(m.id) +' | nombre: '+m.nombre+' | codigo: '+m.codigo, validators=[DataRequired()]) #, widget=LazySelect()
     submit = SubmitField('Ingresa')
 
 class BodNewFormulaForm(FlaskForm):
-    materias = QuerySelectMultipleField('Elige Materias',query_factory=lambda: db.session.query(Materia).filter(Materia.area==Area.Bod), get_pk=lambda m: m.id, get_label=lambda m:'id: '+str(m.id) +' | nombre: '+m.nombre+' | codigo: '+m.codigo, validators=[DataRequired()]) #, widget=LazySelect()
+    materias = QuerySelectMultipleField('Elige Materias',query_factory=lambda: db.session.query(Materia).filter(Materia.area==Area.Bod.value), get_pk=lambda m: m.id, get_label=lambda m:'id: '+str(m.id) +' | nombre: '+m.nombre+' | codigo: '+m.codigo, validators=[DataRequired()]) #, widget=LazySelect()
     submit = SubmitField('Ingresa')
 
 class NewIngrediente(FlaskForm):

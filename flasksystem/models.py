@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from flasksystem import db, login_manager
+from flasksystem import db, login_manager, ma
 from flask_login import UserMixin
 
 @login_manager.user_loader
@@ -48,7 +48,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     reactivos = db.relationship('HistorialReactivos', backref='user', lazy=True)
     materias = db.relationship('HistorialMaterias', backref='user', lazy=True)
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.area.value}')"
@@ -58,23 +58,29 @@ class Quimico(db.Model):
     tipo = db.Column(db.String(20), nullable=False)
     reactivo_id = db.Column(db.Integer, db.ForeignKey('reactivo.id'))
     materia_id = db.Column(db.Integer, db.ForeignKey('materia.id'))
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
 
 class Reactivo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     codigo = db.Column(db.String(30), nullable=False)
-    medida = db.Column(db.Enum(Medida), nullable=False)
+    medida = db.Column(db.String(20), nullable=False)
     historial = db.relationship('HistorialReactivos', backref='reactivo', lazy=True)
     quimico = db.relationship('Quimico', backref='reactivo', lazy=True)
     cantidad = db.Column(db.Integer, nullable=False, default=0)
     bajo_stock = db.Column(db.Integer, nullable=False, default=0)
     tipo = db.Column(db.String(20), nullable=False, default='Reactivo')
     formula = db.relationship('Formula', uselist=False, back_populates='reactivo') #Acceso a los datos de la tabla Formula
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
     tiene_formula = db.Column(db.Boolean, nullable=False, default=False)
     
-    
+    # def __init__(self, nombre, codigo, medida, bajo_stock, area):
+    #     self.nombre = nombre
+    #     self.codigo = codigo
+    #     self.medida = medida
+    #     self.bajo_stock = bajo_stock
+    #     self.area = area
+
     def __repr__(self):
         return f"Reactivo('{self.nombre}', '{self.codigo}', '{self.medida}', '{self.area}')"
 
@@ -88,7 +94,7 @@ class HistorialReactivos(db.Model):
     tipo = db.Column(db.String(10), nullable=False)
     historial_quimico = db.relationship('HistorialQuimicos', backref='historial_reactivo', lazy=True)
     lote = db.Column(db.String(20))
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
 
 class Ingrediente(db.Model):
     materia_id = db.Column(db.Integer, db.ForeignKey('materia.id'), primary_key=True)
@@ -124,14 +130,14 @@ class Materia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     codigo = db.Column(db.String(30), nullable=False)
-    medida = db.Column(db.Enum(Medida), nullable=False)
+    medida = db.Column(db.String(20), nullable=False)
     historial = db.relationship('HistorialMaterias', backref='materia', lazy=True)
     quimico = db.relationship('Quimico', backref='materia', lazy=True)
     cantidad = db.Column(db.Integer, nullable=False, default=0)
     bajo_stock = db.Column(db.Integer, nullable=False, default=0)
     tipo = db.Column(db.String(20), nullable=False, default='Materia')
     formulas = db.relationship('Ingrediente', back_populates='materia') #Acceso a los datos de la tabla Ingredientes
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
     
     def __repr__(self):
         return f"Materia Prima('{self.nombre}', '{self.codigo}', '{self.medida}', '{self.area}')"
@@ -145,7 +151,7 @@ class HistorialMaterias(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     tipo = db.Column(db.String(10), nullable=False) 
     historial_quimico = db.relationship('HistorialQuimicos', backref='historial_materia', lazy=True)
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
 
 class HistorialQuimicos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -153,4 +159,16 @@ class HistorialQuimicos(db.Model):
     reactivo_id = db.Column(db.Integer, db.ForeignKey('historial_reactivos.id'))
     materia_id = db.Column(db.Integer, db.ForeignKey('historial_materias.id'))
     fecha_registro = db.Column(db.DateTime, nullable=False)
-    area = db.Column(db.Enum(Area), nullable=False)
+    area = db.Columndb.String(15), nullable=False)
+
+
+# Schema
+class ReactivoSchema(ma.ModelSchema):
+    class Meta:
+        model = Reactivo
+
+class MateriaSchema(ma.ModelSchema):
+    class Meta:
+        model = Materia
+
+# Init Schema

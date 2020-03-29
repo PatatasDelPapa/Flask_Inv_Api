@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import render_template, url_for, flash, redirect, request, abort, Blueprint
+from flask import render_template, url_for, flash, redirect, request, abort, jsonify, Blueprint
 from flask_login import current_user, login_required
 from flasksystem import db
 from flasksystem.models import (Reactivo, HistorialReactivos, HistorialMaterias, Quimico, 
@@ -22,10 +22,10 @@ def lab_new_reactivo():
     form = ReactivoForm()
     if form.validate_on_submit():
         reactivo = Reactivo(nombre=form.nombre.data, codigo=form.codigo.data, 
-                            medida=form.medida.data, bajo_stock=form.bajo_stock.data, area=Area.Lab)
+                            medida=form.medida.data, bajo_stock=form.bajo_stock.data, area=Area.Lab.value)
         db.session.add(reactivo)
         db.session.commit()
-        quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Lab)
+        quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Lab.value)
         db.session.add(quimico)
         db.session.commit()
         flash('El reactivo se ha creado exitosamente!', 'success')
@@ -38,7 +38,7 @@ def lab_new_reactivo():
 def lab_reactivo(reactivo_id):
     check_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     return render_template('reactivo.html', title=reactivo.nombre, reactivo=reactivo, area='Lab', user=current_user)
 
@@ -47,7 +47,7 @@ def lab_reactivo(reactivo_id):
 def lab_alerta_reactivo(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     form = ModBajoStockForm()
     if form.validate_on_submit():
@@ -63,7 +63,7 @@ def lab_alerta_reactivo(reactivo_id):
 def lab_home_reactivo():
     check_lab()
     # reactivos = Reactivo.query.filter_by(area=Area.Lab).all() # Esta forma no tiene order_by
-    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Lab).order_by(Reactivo.id).all()
+    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Lab.value).order_by(Reactivo.id).all()
     return render_template('ver_reactivos.html', reactivos=reactivos, area='Lab', user=current_user)
 
 @reactivos.route("/lab/reactivo/<int:reactivo_id>/add", methods=['GET', 'POST'])
@@ -71,16 +71,16 @@ def lab_home_reactivo():
 def lab_add_reactivo(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     form = AddReactivoForm()
     if form.validate_on_submit():
         reactivo.cantidad += form.cantidad.data
         historial = HistorialReactivos(observacion=form.observacion.data, cantidad=form.cantidad.data, 
-                                        reactivo=reactivo, user = current_user, tipo='Entrada', area=Area.Lab)
+                                        reactivo=reactivo, user = current_user, tipo='Entrada', area=Area.Lab.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab)
+        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la entrada de reactivo', 'success')
@@ -93,7 +93,7 @@ def lab_add_reactivo(reactivo_id):
 def lab_historial_reactivo_especifico(reactivo_id):
     check_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).order_by(HistorialReactivos.fecha_registro.desc()).all()
     return render_template('historial_reactivo.html', title='Menu Historial Reactivos', legend='Menu Historial Reactivo', 
@@ -103,7 +103,7 @@ def lab_historial_reactivo_especifico(reactivo_id):
 @login_required
 def lab_historial_reactivos():
     check_lab()
-    historiales = HistorialReactivos.query.filter_by(area=Area.Lab).order_by(HistorialReactivos.fecha_registro.desc()).all()
+    historiales = HistorialReactivos.query.filter_by(area=Area.Lab.value).order_by(HistorialReactivos.fecha_registro.desc()).all()
     return render_template('historial_total_reactivos.html', historiales=historiales, title='Historial Reactivos', area='Lab')
 
 @reactivos.route("/lab/reactivo/<int:reactivo_id>/reduce", methods=['GET', 'POST'])
@@ -111,7 +111,7 @@ def lab_historial_reactivos():
 def lab_reduce_reactivo(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     form = ReduceReactivoForm()
     if form.validate_on_submit():
@@ -120,10 +120,10 @@ def lab_reduce_reactivo(reactivo_id):
             return redirect(url_for('reactivos.lab_reduce_reactivo', reactivo_id=reactivo.id))
         reactivo.cantidad -= form.cantidad.data
         historial = HistorialReactivos(observacion=form.observacion.data, cantidad=form.cantidad.data, lote=form.lote.data, 
-                                        reactivo=reactivo, user = current_user, tipo='Salida', area=Area.Lab)
+                                        reactivo=reactivo, user = current_user, tipo='Salida', area=Area.Lab.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab)
+        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la entrada de reactivo', 'success')
@@ -136,7 +136,7 @@ def lab_reduce_reactivo(reactivo_id):
 def lab_delete_reactivo(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     historiales = HistorialReactivos.query.filter_by(reactivo_id=reactivo_id).all()
     quimicos = Quimico.query.filter_by(reactivo_id=reactivo_id).all()
@@ -162,7 +162,7 @@ def lab_delete_reactivo(reactivo_id):
 def lab_formula(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     if reactivo.tiene_formula:
         flash('Este reactivo ya tiene una formula asociada', 'info')
@@ -184,7 +184,7 @@ def lab_formula(reactivo_id):
 def lab_ingrediente(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
 
     if reactivo.tiene_formula:
@@ -227,7 +227,7 @@ def lab_ingrediente(reactivo_id):
 def lab_entrada_reactivo(reactivo_id):
     check_only_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
     # print(reactivo.formula)
     if not reactivo.tiene_formula:
@@ -263,7 +263,7 @@ def lab_entrada_reactivo(reactivo_id):
                 db.session.add(new_correlativo)
                 db.session.commit()
 
-            last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Lab).order_by(HistorialReactivos.id.desc()).first()
+            last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Lab.value).order_by(HistorialReactivos.id.desc()).first()
             año_actual = datetime.utcnow().strftime("%y")
             if last:
                 print("EXISTE LAST")
@@ -321,7 +321,7 @@ def lab_entrada_reactivo(reactivo_id):
 def lab_consulta(reactivo_id):
     check_lab()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab:
+    if reactivo.area != Area.Lab.value:
         return abort(403)
 
     if not reactivo.tiene_formula:
@@ -364,10 +364,10 @@ def bod_new_reactivo():
     form = ReactivoForm()
     if form.validate_on_submit():
         reactivo = Reactivo(nombre=form.nombre.data, codigo=form.codigo.data, 
-                            medida=form.medida.data, bajo_stock=form.bajo_stock.data, area=Area.Bod)
+                            medida=form.medida.data, bajo_stock=form.bajo_stock.data, area=Area.Bod.value)
         db.session.add(reactivo)
         db.session.commit()
-        quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Bod)
+        quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Bod.value)
         db.session.add(quimico)
         db.session.commit()
         flash('El reactivo se ha creado exitosamente!', 'success')
@@ -380,7 +380,7 @@ def bod_new_reactivo():
 def bod_reactivo(reactivo_id):
     check_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     return render_template('reactivo.html', title=reactivo.nombre, reactivo=reactivo, area='Bod', user=current_user)
 
@@ -389,7 +389,7 @@ def bod_reactivo(reactivo_id):
 def bod_alerta_reactivo(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     form = ModBajoStockForm()
     if form.validate_on_submit():
@@ -404,7 +404,7 @@ def bod_alerta_reactivo(reactivo_id):
 def bod_home_reactivo():
     check_bod()
     # reactivos = Reactivo.query.filter_by(area=Area.Bod).all() # Por alguna razon no ordena del primer id a ultimo
-    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Bod).order_by(Reactivo.id).all()
+    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Bod.value).order_by(Reactivo.id).all()
     return render_template('ver_reactivos.html', reactivos=reactivos, area='Bod', user=current_user)
 
 @reactivos.route("/bod/reactivo/<int:reactivo_id>/add", methods=['GET', 'POST'])
@@ -412,16 +412,16 @@ def bod_home_reactivo():
 def bod_add_reactivo(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     form = AddReactivoForm()
     if form.validate_on_submit():
         reactivo.cantidad += form.cantidad.data
         historial = HistorialReactivos(observacion=form.observacion.data, cantidad=form.cantidad.data, 
-                                        reactivo=reactivo, user = current_user, tipo='Entrada', area=Area.Bod)
+                                        reactivo=reactivo, user = current_user, tipo='Entrada', area=Area.Bod.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Reactivo',historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod)
+        historial_quimico = HistorialQuimicos(tipo='Reactivo',historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la entrada de reactivo', 'success')
@@ -434,7 +434,7 @@ def bod_add_reactivo(reactivo_id):
 def bod_historial_reactivo_especifico(reactivo_id):
     check_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).order_by(HistorialReactivos.fecha_registro.desc()).all()
     return render_template('historial_reactivo.html', title='Menu Historial Reactivos', legend='Menu Historial Reactivo', 
@@ -443,7 +443,7 @@ def bod_historial_reactivo_especifico(reactivo_id):
 @reactivos.route("/bod/reactivo/historial")
 @login_required
 def bod_historial_reactivos():
-    historiales = HistorialReactivos.query.filter_by(area=Area.Bod).order_by(HistorialReactivos.fecha_registro.desc()).all()
+    historiales = HistorialReactivos.query.filter_by(area=Area.Bod.value).order_by(HistorialReactivos.fecha_registro.desc()).all()
     return render_template('historial_total_reactivos.html', historiales=historiales, title='Historial Reactivos', area='Bod')
 
 @reactivos.route("/bod/reactivo/<int:reactivo_id>/reduce", methods=['GET', 'POST'])
@@ -451,7 +451,7 @@ def bod_historial_reactivos():
 def bod_reduce_reactivo(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     form = ReduceReactivoForm()
     if form.validate_on_submit():
@@ -460,10 +460,10 @@ def bod_reduce_reactivo(reactivo_id):
             return redirect(url_for('reactivos.bod_reduce_reactivo', reactivo_id=reactivo.id))
         reactivo.cantidad -= form.cantidad.data
         historial = HistorialReactivos(observacion=form.observacion.data, cantidad=form.cantidad.data, lote=form.lote.data, 
-                                        reactivo=reactivo, user = current_user, tipo='Salida', area=Area.Bod)
+                                        reactivo=reactivo, user = current_user, tipo='Salida', area=Area.Bod.value)
         db.session.add(historial)
         db.session.commit()
-        historial_quimico = HistorialQuimicos(tipo='Reactivo',historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod)
+        historial_quimico = HistorialQuimicos(tipo='Reactivo',historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod.value)
         db.session.add(historial_quimico)
         db.session.commit()
         flash('Se ha añadido la entrada de reactivo', 'success')
@@ -476,7 +476,7 @@ def bod_reduce_reactivo(reactivo_id):
 def bod_delete_reactivo(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     historiales = HistorialReactivos.query.filter_by(reactivo_id=reactivo_id).all()
     quimicos = Quimico.query.filter_by(reactivo_id=reactivo_id).all()
@@ -502,7 +502,7 @@ def bod_delete_reactivo(reactivo_id):
 def bod_formula(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
 
     if reactivo.tiene_formula:
@@ -526,7 +526,7 @@ def bod_formula(reactivo_id):
 def bod_ingrediente(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     
     if reactivo.tiene_formula:
@@ -568,7 +568,7 @@ def bod_ingrediente(reactivo_id):
 def bod_entrada_reactivo(reactivo_id):
     check_only_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
     # print(reactivo.formula)
     if not reactivo.tiene_formula:
@@ -603,7 +603,7 @@ def bod_entrada_reactivo(reactivo_id):
                 db.session.add(new_correlativo)
                 db.session.commit()
 
-            last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Bod).order_by(HistorialReactivos.id.desc()).first()
+            last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Bod.value).order_by(HistorialReactivos.id.desc()).first()
             año_actual = datetime.utcnow().strftime("%y")
             if last:
                 print("EXISTE LAST")
@@ -660,7 +660,7 @@ def bod_entrada_reactivo(reactivo_id):
 def bod_consulta(reactivo_id):
     check_bod()
     reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Bod:
+    if reactivo.area != Area.Bod.value:
         return abort(403)
 
     if not reactivo.tiene_formula:
