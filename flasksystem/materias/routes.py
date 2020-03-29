@@ -324,15 +324,18 @@ def json_bod(usuario_actual):
 @token_required
 def json_new_materia(usuario_actual):
     json_only_lab(usuario_actual)
-    nombre = request.json["nombre"]
-    codigo = request.json["codigo"]
-    medida = request.json["medida"]
-    bajo_stock = request.json["bajo_stock"]
-    area = request.json['area']
-    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=area)
+    try:
+        nombre = request.json["nombre"]
+        codigo = request.json["codigo"]
+        medida = request.json["medida"]
+        bajo_stock = request.json["bajo_stock"]
+    except:
+        return jsonify({'message': 'json invalido'}), 400
+
+    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=Area.Lab.value)
     db.session.add(materia)
     db.session.commit()
-    quimico = Quimico(tipo='Materia', materia=materia, area=area)
+    quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
     db.session.add(quimico)
     db.session.commit() 
     return materia_schema.jsonify(materia)
@@ -344,71 +347,95 @@ def json_materia(usuario_actual, materia_id):
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
-        return jsonify({"error": id})
+        return jsonify({"error": id}), 404
+
+    if materia.area != Area.Lab.value:
+        return abort(403)
+
     output = materia_schema.dump(materia)
     return output
 
-@materias.route("/json/materia/<int:materia_id>/alerta", methods=['PUT'])
+@materias.route("/json/lab/materia/<int:materia_id>/alerta", methods=['PUT'])
 @token_required
 def json_alerta_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
-        return jsonify({"error": id})
+        return jsonify({"error": id}), 404
+
+    if materia.area != Area.Lab.value:
+        return abort(403)
+
     materia.bajo_stock = request.json["bajo_stock"]
     db.session.commit()
     return materia_schema.jsonify(materia)
 
-@materias.route("/json/home/materia")
+@materias.route("/json/lab/home/materia")
 @token_required
 def json_home_materia(usuario_actual):
     json_lab(usuario_actual)
-    materias = Materia.query.all()
+    materias = db.session.query(Materia).filter(Materia.area == Area.Lab.value).all()
     output = materias_schema.dump(materias)
     return jsonify({'materias' : output})
 
-@materias.route("/json/materia/<int:materia_id>/add", methods=['PUT'])
+@materias.route("/json/lab/materia/<int:materia_id>/add", methods=['PUT'])
 @token_required
 def json_add_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
-        return jsonify({"error": id})
+        return jsonify({"error": id}), 404
+
+    if materia.area != Area.Lab.value:
+        return abort(403)
+
     cantidad = request.json["cantidad"]
     materia.cantidad += cantidad
     # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
     db.session.commit()
     return materia_schema.jsonify(materia)
 
-@materias.route("/json/materia/<int:materia_id>/reduce", methods=['PUT'])
+@materias.route("/json/lab/materia/<int:materia_id>/reduce", methods=['PUT'])
 @token_required
 def json_reduce_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
-        return jsonify({"error": id})
-    cantidad = request.json["cantidad"]
+        return jsonify({"error": id}), 404
+
+    if materia.area != Area.Lab.value:
+        return abort(403)
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'message': 'json invalido'}), 400
     if materia.cantidad - cantidad < 0:
         descripcion = f"la cantidad ingresada supera al stock actual de esta materia ({materia.cantidad})"
-        return jsonify({"error": descripcion})
+        return jsonify({"error": descripcion}), 403
+
     materia.cantidad -= cantidad
     # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
     db.session.commit()
     return materia_schema.jsonify(materia)
 
-@materias.route("/json/materia/<int:materia_id>/delete", methods=['DELETE'])
+@materias.route("/json/lab/materia/<int:materia_id>/delete", methods=['DELETE'])
 @token_required
 def json_delete_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
-        return jsonify({"error": id})
+        return jsonify({"error": id}), 404
+
+    if materia.area != Area.Lab.value:
+        return abort(403)
+
     if materia.formulas != []:
-        return jsonify({"error": "esta materia es parte de una o mas formulas, si deseas eliminarla entonces elimina las formulas de las que es parte."})
+        return jsonify({"error": "esta materia es parte de una o mas formulas, si deseas eliminarla entonces elimina las formulas de las que es parte."}), 403
+        
     historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
     quimicos = Quimico.query.filter_by(materia_id=materia_id).all()
     # Eliminar Tablas dependientes de Materia
