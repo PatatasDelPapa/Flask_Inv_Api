@@ -10,6 +10,8 @@ from flasksystem.reactivos.forms import (AddReactivoForm, ReduceReactivoForm, Re
 from flasksystem.main.forms import ModBajoStockForm
 from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_only_lab
 from flasksystem.reactivos.utils import is_number
+from flasksystem.schema import (reactivo_schema, reactivos_schema, historial_reactivo_schema, historiales_reactivo_schema,
+                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema)
 
 reactivos = Blueprint('reactivos', __name__)
 

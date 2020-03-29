@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from flasksystem import db, login_manager, ma
+from flasksystem import db, login_manager
 from flask_login import UserMixin
 
 @login_manager.user_loader
@@ -160,15 +160,3 @@ class HistorialQuimicos(db.Model):
     materia_id = db.Column(db.Integer, db.ForeignKey('historial_materias.id'))
     fecha_registro = db.Column(db.DateTime, nullable=False)
     area = db.Column(db.String(15), nullable=False)
-
-
-# Schema
-class ReactivoSchema(ma.ModelSchema):
-    class Meta:
-        model = Reactivo
-
-class MateriaSchema(ma.ModelSchema):
-    class Meta:
-        model = Materia
-
-# Init Schema

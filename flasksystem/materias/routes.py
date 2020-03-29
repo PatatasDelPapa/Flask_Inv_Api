@@ -1,10 +1,12 @@
-from flask import render_template, url_for, flash, redirect, abort, jsonify, Blueprint
+from flask import render_template, url_for, flash, redirect, abort, jsonify, request, Blueprint
 from flask_login import current_user, login_required
 from flasksystem import db
-from flasksystem.models import Materia, HistorialMaterias, Quimico, HistorialQuimicos, Area, MateriaSchema
+from flasksystem.models import Materia, HistorialMaterias, Quimico, HistorialQuimicos, Area
 from flasksystem.materias.forms import MateriaForm, AddMateriaForm, ReduceMateriaForm
 from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_only_lab
 from flasksystem.main.forms import ModBajoStockForm
+from flasksystem.schema import (materia_schema, materias_schema, historial_materia_schema, historiales_materia_schema,
+                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema)
 
 materias = Blueprint('materias', __name__)
 
@@ -298,19 +300,45 @@ def bod_delete_materia(materia_id):
 
 @materias.route("/json")
 def materias_json():
-    one_materia = Materia.query.first()
-    materia_schema = MateriaSchema()
-    output = materia_schema.dump(one_materia)
+    materias = Materia.query.all()
+    output = materias_schema.dump(materias)
     return jsonify({'materia': output})
 
 # ----------------------------------------------------------------------------------------------------------
 
 
-# --------------------------------SECTOR DE ROUTES GENERAL--------------------------------------------------
+# --------------------------------SECTOR DE ROUTES API--------------------------------------------------
 
-
+@materias.route("/lab/materia/json/create", methods=['POST'])
+def lab_json_new_materia():
+    nombre = request.json["nombre"]
+    codigo = request.json["codigo"]
+    medida = request.json["medida"]
+    bajo_stock = request.json["bajo_stock"]
+    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=Area.Lab.value)
+    db.session.add(materia)
+    db.session.commit()
+    quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
+    db.session.add(quimico)
+    db.session.commit() 
+    return materia_schema.jsonify(materia)
 # ----------------------------------------------------------------------------------------------------------
 
+# def lab_new_materia():
+#     check_only_lab()
+#     form = MateriaForm()
+#     if form.validate_on_submit():
+#         materia = Materia(nombre=form.nombre.data, codigo=form.codigo.data, medida=form.medida.data, 
+#                             bajo_stock=form.bajo_stock.data, area=Area.Lab.value)
+#         db.session.add(materia)
+#         db.session.commit()
+#         quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
+#         db.session.add(quimico)
+#         db.session.commit()        
+#         flash('La materia se ha creado exitosamente!', 'success')
+#         return redirect(url_for('main.lab_home'))
+#     return render_template('crear_materia.html', title='Nueva Materia',
+#                             form=form, legend='Nueva Materia', area='Lab')
 
 
 # NOTAS:
