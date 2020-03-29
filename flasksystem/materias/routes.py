@@ -7,6 +7,7 @@ from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_o
 from flasksystem.main.forms import ModBajoStockForm
 from flasksystem.schema import (materia_schema, materias_schema, historial_materia_schema, historiales_materia_schema,
                                 quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema)
+from flasksystem.users.routes import token_required
 
 materias = Blueprint('materias', __name__)
 
@@ -301,10 +302,28 @@ def bod_delete_materia(materia_id):
 
 # ----------------------------------------------------------------------------------------------------------
 
+def json_only_lab(usuario_actual):
+    if usuario_actual.area != Area.Lab.value:
+        return abort(403)
+
+def json_lab(usuario_actual):
+    if usuario_actual.area != Area.Lab.value and usuario_actual.area != Area.Lab_Bod.value:
+        return abort(403)
+
+def json_only_bod(usuario_actual):
+    if usuario_actual != Area.Bod.value:
+        return abort(403)
+
+def json_bod(usuario_actual):
+    if usuario_actual != Area.Bod.value and usuario_actual.area != Area.Lab_Bod.value:
+        return abort(403)
+
 # --------------------------------SECTOR DE ROUTES API--------------------------------------------------
 
-@materias.route("/json/materia/create", methods=['POST'])
-def json_new_materia():
+@materias.route("/json/lab/materia/create", methods=['POST'])
+@token_required
+def json_new_materia(usuario_actual):
+    json_only_lab(usuario_actual)
     nombre = request.json["nombre"]
     codigo = request.json["codigo"]
     medida = request.json["medida"]
@@ -318,8 +337,10 @@ def json_new_materia():
     db.session.commit() 
     return materia_schema.jsonify(materia)
 
-@materias.route("/json/materia/<int:materia_id>")
-def json_materia(materia_id):
+@materias.route("/json/lab/materia/<int:materia_id>")
+@token_required
+def json_materia(usuario_actual, materia_id):
+    json_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
@@ -328,7 +349,9 @@ def json_materia(materia_id):
     return output
 
 @materias.route("/json/materia/<int:materia_id>/alerta", methods=['PUT'])
-def json_alerta_materia(materia_id):
+@token_required
+def json_alerta_materia(usuario_actual, materia_id):
+    json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
@@ -338,24 +361,31 @@ def json_alerta_materia(materia_id):
     return materia_schema.jsonify(materia)
 
 @materias.route("/json/home/materia")
-def json_home_materia():
+@token_required
+def json_home_materia(usuario_actual):
+    json_lab(usuario_actual)
     materias = Materia.query.all()
     output = materias_schema.dump(materias)
-    return jsonify(output)
+    return jsonify({'materias' : output})
 
 @materias.route("/json/materia/<int:materia_id>/add", methods=['PUT'])
-def json_add_materia(materia_id):
+@token_required
+def json_add_materia(usuario_actual, materia_id):
+    json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id})
     cantidad = request.json["cantidad"]
     materia.cantidad += cantidad
+    # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
     db.session.commit()
     return materia_schema.jsonify(materia)
 
 @materias.route("/json/materia/<int:materia_id>/reduce", methods=['PUT'])
-def json_reduce_materia(materia_id):
+@token_required
+def json_reduce_materia(usuario_actual, materia_id):
+    json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
@@ -370,7 +400,9 @@ def json_reduce_materia(materia_id):
     return materia_schema.jsonify(materia)
 
 @materias.route("/json/materia/<int:materia_id>/delete", methods=['DELETE'])
-def json_delete_materia(materia_id):
+@token_required
+def json_delete_materia(usuario_actual, materia_id):
+    json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"

@@ -1,8 +1,13 @@
-from flask import render_template, url_for, flash, redirect, request, Blueprint
+import enum
+import jwt
+import datetime
+import os
+from flask import render_template, url_for, flash, redirect, request, Blueprint, jsonify, make_response
 from flask_login import login_user, current_user, logout_user, login_required
 from flasksystem import db, bcrypt
 from flasksystem.users.forms import RegistrationForm, LoginForm, UpdateAccountForm, UpdatePasswordForm
 from flasksystem.models import User
+from functools import wraps
 
 users = Blueprint('users', __name__)
 
@@ -70,3 +75,44 @@ def password():
         return redirect(url_for('users.account'))
     return render_template('password.html', form=form, legend='Cambiar contraseña')
 
+# ---------------------------------------------------------------------------------------------
+
+
+@users.route("/json/login")
+def json_login():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        return make_response('No se pudo verificar', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
+    
+    user = User.query.filter_by(email=auth.username).first()
+    
+    if not user:
+        return make_response('No se pudo verificar', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
+    
+    if bcrypt.check_password_hash(user.password, auth.password):
+        token = jwt.encode({'id' : user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, os.environ.get('SECRET_KEY'))
+        return jsonify({"token" : token.decode("UTF-8")})
+    
+    return make_response('No se pudo verificar', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        
+        if not token:
+            return jsonify({'message': 'No se encuentra el token!'}), 401
+        
+        try:
+            data = jwt.decode(token, os.environ.get('SECRET_KEY'))
+            usuario_actual = User.query.filter_by(id=data['id']).first()
+        except:
+            return jsonify({'message': 'El token es invalido!'}), 401
+
+        return f(usuario_actual, *args, **kwargs)
+        
+    return decorated
