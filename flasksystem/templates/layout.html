@@ -53,15 +53,15 @@
                     {% endif %}
                 {% endwith %}
                 {% if current_user.is_authenticated and title != 'Home' %}
-                    {% if (title == 'Lab Home' or title == 'Bod Home') and (current_user.area.value == 'Lab' or current_user.area.value == 'Bod') %}
+                    {% if (title == 'Lab Home' or title == 'Bod Home') and (current_user.area == 'Lab' or current_user.area == 'Bod') %}
                     {% else %}
-                        {% if current_user.area.value == 'Lab' %}
+                        {% if current_user.area == 'Lab' %}
                         <a href="{{ url_for('main.lab_home') }}">
                             <button class="btn btn-outline-primary mt-3 mb-3">
                                 Menu Principal
                             </button>
                         </a>
-                        {% elif current_user.area.value == 'Bod' %}
+                        {% elif current_user.area == 'Bod' %}
                         <a href="{{ url_for('main.bod_home') }}">
                             <button class="btn btn-outline-primary mt-3 mb-3">
                                 Menu Principal
@@ -71,7 +71,7 @@
                     {% endif %}
                 {% endif %}
                 {% if area == 'Lab' %}
-                    {% if current_user.area.value == 'Lab_Bod' and title != 'Lab Home' %}
+                    {% if current_user.area == 'Lab_Bod' and title != 'Lab Home' %}
                         <a href="{{ url_for('main.lab_home') }}">
                             <button class="btn btn-outline-primary mt-3 mb-3">
                                 Menu Principal
@@ -89,7 +89,7 @@
                         </button>
                     </a>
                 {% elif area == 'Bod' %}
-                    {% if current_user.area.value == 'Lab_Bod' and title != 'Bod Home' %}
+                    {% if current_user.area == 'Lab_Bod' and title != 'Bod Home' %}
                         <a href="{{ url_for('main.bod_home') }}">
                             <button class="btn btn-outline-primary mt-3 mb-3">
                                 Menu Principal

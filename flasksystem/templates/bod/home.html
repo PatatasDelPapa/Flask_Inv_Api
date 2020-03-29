@@ -43,7 +43,7 @@
                             <td>{{ quimico.materia.cantidad }} {{ quimico.materia.medida.value }}</td>
                             <td class="text-right">
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_materia', materia_id=quimico.materia.id) }}">Ver</a>
-                                {% if user.area.value == 'Bod' %}
+                                {% if user.area == 'Bod' %}
                                   <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_add_materia', materia_id=quimico.materia.id) }}">Entrada</a>
                                   <a class="btn btn-danger btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_reduce_materia', materia_id=quimico.materia.id) }}">Salida</a>
                                 {% endif %}
@@ -63,7 +63,7 @@
                             <td>{{ quimico.reactivo.cantidad }} {{ quimico.reactivo.medida.value }}</td>
                             <td class="text-right">
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.bod_reactivo', reactivo_id=quimico.reactivo.id) }}">Ver</a>
-                                {% if user.area.value == 'Bod' %}
+                                {% if user.area == 'Bod' %}
                                   <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.bod_add_reactivo', reactivo_id=quimico.reactivo.id) }}">Entrada</a>
                                   <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.bod_entrada_reactivo', reactivo_id=quimico.reactivo.id) }}">Produccion</a>
                                   <a class="btn btn-danger btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.bod_reduce_reactivo', reactivo_id=quimico.reactivo.id) }}">Salida</a>

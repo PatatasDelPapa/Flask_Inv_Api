@@ -12,22 +12,22 @@
     </article>
     <div>
         {% if area == 'Lab' %}
-            {% if user.area.value == 'Lab' %}
+            {% if user.area == 'Lab' %}
                 <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_add_materia', materia_id=materia.id) }}">Entrada</a>
                 <a class="btn btn-danger btn-sm m-1" href="{{ url_for('materias.lab_reduce_materia', materia_id=materia.id) }}">Salida</a>
             {% endif %}    
             <a class="btn btn-info btn-sm m-1" href="{{ url_for('materias.lab_historial_materia_especifico', materia_id=materia.id) }}">Historial</a>
-            {% if user.area.value == 'Lab' %}
+            {% if user.area == 'Lab' %}
                 <a class="btn btn-info btn-sm m-1" href="{{ url_for('materias.bod_alerta_materia', materia_id=materia.id) }}">Alerta</a>
                 <button type="button" class="btn btn-outline-danger btn-sm m-1" data-toggle="modal" data-target="#deleteModal">Eliminar</button>
             {% endif %}
         {% elif area == 'Bod' %}
             <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_add_materia', materia_id=materia.id) }}">Entrada</a>
-            {% if user.area.value == 'Bod' %}
+            {% if user.area == 'Bod' %}
                 <a class="btn btn-danger btn-sm m-1" href="{{ url_for('materias.bod_reduce_materia', materia_id=materia.id) }}">Salida</a>
             {% endif %}
             <a class="btn btn-info btn-sm m-1" href="{{ url_for('materias.bod_historial_materia_especifico', materia_id=materia.id) }}">Historial</a>
-            {% if user.area.value == 'Bod' %}
+            {% if user.area == 'Bod' %}
                 <a class="btn btn-info btn-sm m-1" href="{{ url_for('materias.bod_alerta_materia', materia_id=materia.id) }}">Alerta</a>
                 <button type="button" class="btn btn-outline-danger btn-sm m-1" data-toggle="modal" data-target="#deleteModal">Eliminar</button>
             {% endif %}

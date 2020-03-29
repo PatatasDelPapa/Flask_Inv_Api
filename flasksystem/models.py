@@ -159,7 +159,7 @@ class HistorialQuimicos(db.Model):
     reactivo_id = db.Column(db.Integer, db.ForeignKey('historial_reactivos.id'))
     materia_id = db.Column(db.Integer, db.ForeignKey('historial_materias.id'))
     fecha_registro = db.Column(db.DateTime, nullable=False)
-    area = db.Columndb.String(15), nullable=False)
+    area = db.Column(db.String(15), nullable=False)
 
 
 # Schema

@@ -3,7 +3,7 @@
 {% block content %}
     <div>
         {% if area == 'Lab' %}
-            {% if user.area.value == 'Lab' %}
+            {% if user.area == 'Lab' %}
             <a href="{{ url_for('materias.lab_new_materia') }}">
                 <button class="btn btn btn-outline-success mt-3 mb-3">
                     Nueva materia
@@ -16,7 +16,7 @@
                 </button>
             </a>
         {% elif area == 'Bod' %}
-            {% if user.area.value == 'Bod' %}
+            {% if user.area == 'Bod' %}
             <a href="{{ url_for('materias.bod_new_materia') }}">
                 <button class="btn btn btn-outline-success mt-3 mb-3">
                     Nueva materia
@@ -57,14 +57,14 @@
                         <td class="text-right">
                             {% if area == 'Lab' %}
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_materia', materia_id=materia.id) }}">Ver</a>
-                                {% if user.area.value == 'Lab' %}
+                                {% if user.area == 'Lab' %}
                                     <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_add_materia', materia_id=materia.id) }}">Entrada</a>
                                     <a class="btn btn-danger btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_reduce_materia', materia_id=materia.id) }}">Salida</a>
                                 {% endif %}
                                 <a class="btn btn-info btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_historial_materia_especifico', materia_id=materia.id) }}">Historial</a> 
                             {% elif area == 'Bod' %}
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_materia', materia_id=materia.id) }}">Ver</a>
-                                {% if user.area.value == 'Bod' %}
+                                {% if user.area == 'Bod' %}
                                     <a class="btn btn-success btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_add_materia', materia_id=materia.id) }}">Entrada</a>
                                     <a class="btn btn-danger btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.bod_reduce_materia', materia_id=materia.id) }}">Salida</a>
                                 {% endif %}
