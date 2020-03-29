@@ -3,13 +3,13 @@ from flasksystem.models import Reactivo, Materia, User, Quimico, HistorialReacti
 
 # Schema
 
-class ReactivoSchema(ma.ModelSchema):
+class ReactivoSchema(ma.Schema):
     class Meta:
-        model = Reactivo
+        fields = ('id', 'nombre', 'codigo', 'medida', 'bajo_stock', 'area', 'cantidad')
 
-class MateriaSchema(ma.ModelSchema):
+class MateriaSchema(ma.Schema):
     class Meta:
-        model = Materia
+        fields = ('id', 'nombre', 'codigo', 'medida', 'bajo_stock', 'area', 'cantidad')
 
 class UserSchema(ma.ModelSchema):
     class Meta:

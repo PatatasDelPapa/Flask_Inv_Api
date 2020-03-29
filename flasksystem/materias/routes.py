@@ -298,48 +298,125 @@ def bod_delete_materia(materia_id):
     flash('La materia se ha eliminado', 'success')
     return redirect(url_for('main.bod_home'))
 
-@materias.route("/json")
-def materias_json():
-    materias = Materia.query.all()
-    output = materias_schema.dump(materias)
-    return jsonify({'materia': output})
 
 # ----------------------------------------------------------------------------------------------------------
 
-
 # --------------------------------SECTOR DE ROUTES API--------------------------------------------------
 
-@materias.route("/lab/materia/json/create", methods=['POST'])
-def lab_json_new_materia():
+@materias.route("/json/materia/create", methods=['POST'])
+def json_new_materia():
     nombre = request.json["nombre"]
     codigo = request.json["codigo"]
     medida = request.json["medida"]
     bajo_stock = request.json["bajo_stock"]
-    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=Area.Lab.value)
+    area = request.json['area']
+    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=area)
     db.session.add(materia)
     db.session.commit()
-    quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
+    quimico = Quimico(tipo='Materia', materia=materia, area=area)
     db.session.add(quimico)
     db.session.commit() 
     return materia_schema.jsonify(materia)
+
+@materias.route("/json/materia/<int:materia_id>")
+def json_materia(materia_id):
+    materia = Materia.query.get(materia_id)
+    if not materia:
+        id = f"no existe materia con ID = {materia_id}"
+        return jsonify({"error": id})
+    output = materia_schema.dump(materia)
+    return output
+
+@materias.route("/json/materia/<int:materia_id>/alerta", methods=['PUT'])
+def json_alerta_materia(materia_id):
+    materia = Materia.query.get(materia_id)
+    if not materia:
+        id = f"no existe materia con ID = {materia_id}"
+        return jsonify({"error": id})
+    materia.bajo_stock = request.json["bajo_stock"]
+    db.session.commit()
+    return materia_schema.jsonify(materia)
+
+@materias.route("/json/home/materia")
+def json_home_materia():
+    materias = Materia.query.all()
+    output = materias_schema.dump(materias)
+    return jsonify(output)
+
+@materias.route("/json/materia/<int:materia_id>/add", methods=['PUT'])
+def json_add_materia(materia_id):
+    materia = Materia.query.get(materia_id)
+    if not materia:
+        id = f"no existe materia con ID = {materia_id}"
+        return jsonify({"error": id})
+    cantidad = request.json["cantidad"]
+    materia.cantidad += cantidad
+    db.session.commit()
+    return materia_schema.jsonify(materia)
+
+@materias.route("/json/materia/<int:materia_id>/reduce", methods=['PUT'])
+def json_reduce_materia(materia_id):
+    materia = Materia.query.get(materia_id)
+    if not materia:
+        id = f"no existe materia con ID = {materia_id}"
+        return jsonify({"error": id})
+    cantidad = request.json["cantidad"]
+    if materia.cantidad - cantidad < 0:
+        descripcion = f"la cantidad ingresada supera al stock actual de esta materia ({materia.cantidad})"
+        return jsonify({"error": descripcion})
+    materia.cantidad -= cantidad
+    # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
+    db.session.commit()
+    return materia_schema.jsonify(materia)
+
+@materias.route("/json/materia/<int:materia_id>/delete", methods=['DELETE'])
+def json_delete_materia(materia_id):
+    materia = Materia.query.get(materia_id)
+    if not materia:
+        id = f"no existe materia con ID = {materia_id}"
+        return jsonify({"error": id})
+    if materia.formulas != []:
+        return jsonify({"error": "esta materia es parte de una o mas formulas, si deseas eliminarla entonces elimina las formulas de las que es parte."})
+    historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
+    quimicos = Quimico.query.filter_by(materia_id=materia_id).all()
+    # Eliminar Tablas dependientes de Materia
+    for historial in historiales:
+        q_historiales = HistorialQuimicos.query.filter_by(materia_id=historial.id).all()
+        for q_historial in q_historiales:
+            db.session.delete(q_historial)
+        db.session.delete(historial)
+    for quimico in quimicos:
+        db.session.delete(quimico)
+    db.session.delete(materia)
+    db.session.commit()
+    return jsonify({"success": "se ha eliminado correctamente la materia"})
 # ----------------------------------------------------------------------------------------------------------
 
-# def lab_new_materia():
-#     check_only_lab()
-#     form = MateriaForm()
-#     if form.validate_on_submit():
-#         materia = Materia(nombre=form.nombre.data, codigo=form.codigo.data, medida=form.medida.data, 
-#                             bajo_stock=form.bajo_stock.data, area=Area.Lab.value)
-#         db.session.add(materia)
-#         db.session.commit()
-#         quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
-#         db.session.add(quimico)
-#         db.session.commit()        
-#         flash('La materia se ha creado exitosamente!', 'success')
-#         return redirect(url_for('main.lab_home'))
-#     return render_template('crear_materia.html', title='Nueva Materia',
-#                             form=form, legend='Nueva Materia', area='Lab')
 
+# @materias.route("/bod/materia/<int:materia_id>/delete", methods=['POST'])
+# @login_required
+# def bod_delete_materia(materia_id):
+#     check_only_bod()
+#     materia = Materia.query.get_or_404(materia_id)
+#     if materia.area != Area.Bod.value:
+#         return abort(403)
+#     if materia.formulas != []:
+#         flash('Esta materia es parte de una o más formulas. Si desea eliminarla por favor elimine la(s) formula(s) de la(s) que es parte', 'danger')
+#         return redirect(url_for('materias.bod_materia', materia_id = materia.id))
+    # historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
+    # quimicos = Quimico.query.filter_by(materia_id=materia_id).all()
+    # # Eliminar Tablas dependientes de Materia
+    # for historial in historiales:
+    #     q_historiales = HistorialQuimicos.query.filter_by(materia_id=historial.id).all()
+    #     for q_historial in q_historiales:
+    #         db.session.delete(q_historial)
+    #     db.session.delete(historial)
+    # for quimico in quimicos:
+    #     db.session.delete(quimico)
+    # db.session.delete(materia)
+    # db.session.commit()
+#     flash('La materia se ha eliminado', 'success')
+#     return redirect(url_for('main.bod_home'))
 
 # NOTAS:
 #  1.- usando area='Lab' o 'Bod' puedo hacer que jinja2 haga el url_for correcto
