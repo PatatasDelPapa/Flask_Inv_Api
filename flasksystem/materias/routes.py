@@ -6,8 +6,10 @@ from flasksystem.materias.forms import MateriaForm, AddMateriaForm, ReduceMateri
 from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_only_lab
 from flasksystem.main.forms import ModBajoStockForm
 from flasksystem.schema import (materia_schema, materias_schema, historial_materia_schema, historiales_materia_schema,
-                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema)
+                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema,
+                                materia_bajo_stock_schema)
 from flasksystem.users.routes import token_required
+from marshmallow import ValidationError
 
 materias = Blueprint('materias', __name__)
 
@@ -324,20 +326,22 @@ def json_bod(usuario_actual):
 @token_required
 def json_new_materia(usuario_actual):
     json_only_lab(usuario_actual)
-    try:
-        nombre = request.json["nombre"]
-        codigo = request.json["codigo"]
-        medida = request.json["medida"]
-        bajo_stock = request.json["bajo_stock"]
-    except:
-        return jsonify({'message': 'json invalido'}), 400
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400
 
-    materia = Materia(nombre=nombre, codigo=codigo, medida=medida, bajo_stock=bajo_stock, area=Area.Lab.value)
+    try:
+        materia = materia_schema.load(json_data)
+    except ValidationError as err:
+        print(err.messages)
+        print(err.valid_data)
+        return jsonify(err.messages), 422
+
     db.session.add(materia)
     db.session.commit()
     quimico = Quimico(tipo='Materia', materia=materia, area=Area.Lab.value)
     db.session.add(quimico)
-    db.session.commit() 
+    db.session.commit()     
     return materia_schema.jsonify(materia)
 
 @materias.route("/json/lab/materia/<int:materia_id>")
@@ -366,12 +370,19 @@ def json_alerta_materia(usuario_actual, materia_id):
 
     if materia.area != Area.Lab.value:
         return abort(403)
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400 
+    try:
+        materia_bajo_stock_schema.load(json_data, instance=Materia().query.get(materia_id), partial=True)
+    except ValidationError as err:
+        print(err.messages)
+        return jsonify(err.messages), 422
 
-    materia.bajo_stock = request.json["bajo_stock"]
     db.session.commit()
     return materia_schema.jsonify(materia)
 
-@materias.route("/json/lab/home/materia")
+@materias.route("/json/lab/materia/home")
 @token_required
 def json_home_materia(usuario_actual):
     json_lab(usuario_actual)
@@ -390,10 +401,32 @@ def json_add_materia(usuario_actual, materia_id):
 
     if materia.area != Area.Lab.value:
         return abort(403)
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400
 
-    cantidad = request.json["cantidad"]
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'message': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"message": "Ingresa un numero valido"}), 422
+    if cantidad <= 0:
+        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+        
     materia.cantidad += cantidad
-    # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
+    historial = HistorialMaterias(observacion=observacion, cantidad=cantidad, materia=materia, user=usuario_actual, tipo='Entrada', area=Area.Lab.value)
+    db.session.add(historial)
+    db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab.value)
+    db.session.add(historial_quimico)
     db.session.commit()
     return materia_schema.jsonify(materia)
 
@@ -412,13 +445,29 @@ def json_reduce_materia(usuario_actual, materia_id):
         cantidad = request.json["cantidad"]
     except:
         return jsonify({'message': 'json invalido'}), 400
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"message": "Ingresa un numero valido"}), 422
+    if cantidad <= 0:
+        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""        
+
     if materia.cantidad - cantidad < 0:
         descripcion = f"la cantidad ingresada supera al stock actual de esta materia ({materia.cantidad})"
-        return jsonify({"error": descripcion}), 403
+        return jsonify({"error": descripcion}), 422
 
     materia.cantidad -= cantidad
-    # IMPLEMENTAR LOS HISTORIALES QUE REQUIEREN A UN USUARIO CONECTADO
+    historial = HistorialMaterias(observacion=observacion, cantidad=cantidad, materia=materia, user = usuario_actual, tipo='Salida', area=Area.Lab.value)
+    db.session.add(historial)
     db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Materia',historial_materia = historial, fecha_registro = historial.fecha_registro, area=Area.Lab.value)
+    db.session.add(historial_quimico)
+    db.session.commit()    
     return materia_schema.jsonify(materia)
 
 @materias.route("/json/lab/materia/<int:materia_id>/delete", methods=['DELETE'])
@@ -434,8 +483,8 @@ def json_delete_materia(usuario_actual, materia_id):
         return abort(403)
 
     if materia.formulas != []:
-        return jsonify({"error": "esta materia es parte de una o mas formulas, si deseas eliminarla entonces elimina las formulas de las que es parte."}), 403
-        
+        return jsonify({"error": "esta materia es parte de una o mas formulas, si deseas eliminarla entonces elimina las formulas de las que es parte."}), 422
+
     historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
     quimicos = Quimico.query.filter_by(materia_id=materia_id).all()
     # Eliminar Tablas dependientes de Materia
@@ -451,6 +500,14 @@ def json_delete_materia(usuario_actual, materia_id):
     return jsonify({"success": "se ha eliminado correctamente la materia"})
 # ----------------------------------------------------------------------------------------------------------
 
+@materias.route("/json/lab/materia/<int:materia_id>/historial")
+@token_required
+def json_materia_historial(usuario_actual, materia_id):
+    historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
+    if not historiales:
+        return jsonify({'message': 'Esta materia no tiene historiales'})
+    output = historiales_materia_schema.dump(historiales)
+    return jsonify({'historiales': output})
 
 # @materias.route("/bod/materia/<int:materia_id>/delete", methods=['POST'])
 # @login_required
