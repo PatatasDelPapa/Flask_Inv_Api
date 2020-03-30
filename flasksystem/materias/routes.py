@@ -320,11 +320,11 @@ def json_bod(usuario_actual):
     if usuario_actual != Area.Bod.value and usuario_actual.area != Area.Lab_Bod.value:
         return abort(403)
 
-# --------------------------------SECTOR DE ROUTES API--------------------------------------------------
+# --------------------------------SECTOR DE ROUTES API LAB--------------------------------------------------
 
 @materias.route("/json/lab/materia/create", methods=['POST'])
 @token_required
-def json_new_materia(usuario_actual):
+def json_lab_new_materia(usuario_actual):
     json_only_lab(usuario_actual)
     json_data = request.get_json()
     if not json_data:
@@ -346,7 +346,7 @@ def json_new_materia(usuario_actual):
 
 @materias.route("/json/lab/materia/<int:materia_id>")
 @token_required
-def json_materia(usuario_actual, materia_id):
+def json_lab_materia(usuario_actual, materia_id):
     json_lab(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -361,7 +361,7 @@ def json_materia(usuario_actual, materia_id):
 
 @materias.route("/json/lab/materia/<int:materia_id>/alerta", methods=['PUT'])
 @token_required
-def json_alerta_materia(usuario_actual, materia_id):
+def json_lab_alerta_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -384,7 +384,7 @@ def json_alerta_materia(usuario_actual, materia_id):
 
 @materias.route("/json/lab/materia/home")
 @token_required
-def json_home_materia(usuario_actual):
+def json_lab_home_materia(usuario_actual):
     json_lab(usuario_actual)
     materias = db.session.query(Materia).filter(Materia.area == Area.Lab.value).all()
     output = materias_schema.dump(materias)
@@ -392,7 +392,7 @@ def json_home_materia(usuario_actual):
 
 @materias.route("/json/lab/materia/<int:materia_id>/add", methods=['PUT'])
 @token_required
-def json_add_materia(usuario_actual, materia_id):
+def json_lab_add_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -432,7 +432,7 @@ def json_add_materia(usuario_actual, materia_id):
 
 @materias.route("/json/lab/materia/<int:materia_id>/reduce", methods=['PUT'])
 @token_required
-def json_reduce_materia(usuario_actual, materia_id):
+def json_lab_reduce_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -472,7 +472,7 @@ def json_reduce_materia(usuario_actual, materia_id):
 
 @materias.route("/json/lab/materia/<int:materia_id>/delete", methods=['DELETE'])
 @token_required
-def json_delete_materia(usuario_actual, materia_id):
+def json_lab_delete_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -502,7 +502,7 @@ def json_delete_materia(usuario_actual, materia_id):
 
 @materias.route("/json/lab/materia/<int:materia_id>/historial")
 @token_required
-def json_materia_historial(usuario_actual, materia_id):
+def json_lab_materia_historial(usuario_actual, materia_id):
     materia = Materia.query.get(materia_id).first()
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
@@ -520,7 +520,7 @@ def json_materia_historial(usuario_actual, materia_id):
 
 @materias.route("/json/bod/materia/create", methods=['POST'])
 @token_required
-def json_new_materia(usuario_actual):
+def json_bod_new_materia(usuario_actual):
     json_only_bod(usuario_actual)
     json_data = request.get_json()
     if not json_data:
@@ -542,7 +542,7 @@ def json_new_materia(usuario_actual):
 
 @materias.route("/json/bod/materia/<int:materia_id>")
 @token_required
-def json_materia(usuario_actual, materia_id):
+def json_bod_materia(usuario_actual, materia_id):
     json_bod(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -557,7 +557,7 @@ def json_materia(usuario_actual, materia_id):
 
 @materias.route("/json/Bod/materia/<int:materia_id>/alerta", methods=['PUT'])
 @token_required
-def json_alerta_materia(usuario_actual, materia_id):
+def json_bod_alerta_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -580,7 +580,7 @@ def json_alerta_materia(usuario_actual, materia_id):
 
 @materias.route("/json/bod/materia/home")
 @token_required
-def json_home_materia(usuario_actual):
+def json_bod_home_materia(usuario_actual):
     json_bod(usuario_actual)
     materias = db.session.query(Materia).filter(Materia.area == Area.Bod.value).all()
     output = materias_schema.dump(materias)
@@ -588,7 +588,7 @@ def json_home_materia(usuario_actual):
 
 @materias.route("/json/bod/materia/<int:materia_id>/add", methods=['PUT'])
 @token_required
-def json_add_materia(usuario_actual, materia_id):
+def json_bod_add_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -628,7 +628,7 @@ def json_add_materia(usuario_actual, materia_id):
 
 @materias.route("/json/bod/materia/<int:materia_id>/reduce", methods=['PUT'])
 @token_required
-def json_reduce_materia(usuario_actual, materia_id):
+def json_bod_reduce_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -668,7 +668,7 @@ def json_reduce_materia(usuario_actual, materia_id):
 
 @materias.route("/json/bod/materia/<int:materia_id>/delete", methods=['DELETE'])
 @token_required
-def json_delete_materia(usuario_actual, materia_id):
+def json_bod_delete_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
     materia = Materia.query.get(materia_id).first()
     if not materia:
@@ -699,7 +699,7 @@ def json_delete_materia(usuario_actual, materia_id):
 
 @materias.route("/json/bod/materia/<int:materia_id>/historial")
 @token_required
-def json_materia_historial(usuario_actual, materia_id):
+def json_bod_materia_historial(usuario_actual, materia_id):
     materia = Materia.query.get(materia_id).first()
     if not materia:
         id = f"no existe materia con ID = {materia_id}"

@@ -11,7 +11,10 @@ from flasksystem.main.forms import ModBajoStockForm
 from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_only_lab
 from flasksystem.reactivos.utils import is_number
 from flasksystem.schema import (reactivo_schema, reactivos_schema, historial_reactivo_schema, historiales_reactivo_schema,
-                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema)
+                                quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema,
+                                reactivo_bajo_stock_schema)
+from flasksystem.users.routes import token_required
+from marshmallow import ValidationError
 
 reactivos = Blueprint('reactivos', __name__)
 
@@ -694,3 +697,152 @@ def bod_consulta(reactivo_id):
     return render_template('consulta.html', form=form, legend='Consulta', reactivo = reactivo, area='Bod')
 
 # ----------------------------------------------------------------------------------------------------------    
+
+def json_only_lab(usuario_actual):
+    if usuario_actual.area != Area.Lab.value:
+        return abort(403)
+
+def json_lab(usuario_actual):
+    if usuario_actual.area != Area.Lab.value and usuario_actual.area != Area.Lab_Bod.value:
+        return abort(403)
+
+def json_only_bod(usuario_actual):
+    if usuario_actual != Area.Bod.value:
+        return abort(403)
+
+def json_bod(usuario_actual):
+    if usuario_actual != Area.Bod.value and usuario_actual.area != Area.Lab_Bod.value:
+        return abort(403)
+
+# --------------------------------SECTOR DE ROUTES API LAB--------------------------------------------------
+
+@reactivos.route("json/lab/reactivo/create", methods=['POST'])
+@token_required
+def json_lab_new_reactivo(usuario_actual):
+    json_only_lab()
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400
+
+    try:
+        reactivo = reactivo_schema.load(json_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 422
+
+    db.session.add(reactivo)
+    db.session.commit()
+    quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Lab.value)
+    db.session.add(quimico)
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("json/lab/reactivo/<int:reactivo_id>")
+@token_required
+def json_lab_reactivo(usuario_actual, reactivo_id):
+    json_lab()
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    output = reactivo_schema.dump(reactivo)
+    return output
+
+@reactivos.route("json/lab/reactivo/<int:reactivo_id>/alerta", methods=['POST'])
+@token_required
+def json_lab_alerta_reactivo(usuario_actual, reactivo_id):
+    json_only_lab()
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400 
+    try:
+        reactivo_bajo_stock_schema.load(reactivo, instance=Reactivo().query.get(reactivo_id), partial=True)
+    except ValidationError as err:
+        return jsonify(err.messages), 422
+
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("json/lab/reactivo/<int:reactivo_id>/add", methods=['POST'])
+@token_required
+def json_lab_add_reactivo(usuario_actual, reactivo_id):
+    json_only_lab()
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'message': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"message": "Ingresa un numero valido"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+    reactivo.cantidad += cantidad
+    historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, reactivo=reactivo, user=usuario_actual, tipo='Entrada', area=Area.Lab.value)
+    db.session.add(historial)
+    db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab.value)
+    db.session.add(historial_quimico)
+    db.session.commit()
+
+@reactivos.route("json/lab/reactivo/<int:reactivo_id>/historial", methods=['POST'])
+@token_required
+def lab_historial_reactivo_especifico(usuario_actual, reactivo_id):
+    json_lab()
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'message': 'Invalid request'}), 400 
+
+    historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).all()
+    if not historiales:
+        return jsonify({'message': 'Esta materia no tiene historiales'})
+    output = historiales_reactivo_schema.dump(historiales)
+    return jsonify({'historiales': output})
+
+# ----------------------------------------------------------------------------------------------------------
+
+@reactivos.route("/lab/reactivo/<int:reactivo_id>/historial", methods=['GET', 'POST'])
+@login_required
+def lab_historial_reactivo_especifico(reactivo_id):
+    check_lab()
+    reactivo = Reactivo.query.get_or_404(reactivo_id)
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+    historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).order_by(HistorialReactivos.fecha_registro.desc()).all()
+    return render_template('historial_reactivo.html', title='Menu Historial Reactivos', legend='Menu Historial Reactivo', 
+                            historiales=historiales, reactivo=reactivo, area='Lab')

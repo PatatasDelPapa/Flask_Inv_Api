@@ -68,10 +68,18 @@ class MateriaBajoStockSchema(ma.SQLAlchemySchema):
 
     bajo_stock = ma.auto_field(validate=validate_positive)
 
+class ReactivoBajoStockSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Reactivo
+        load_instance = True
+        # include_fk = True
+
+    bajo_stock = ma.auto_field(validate=validate_positive)
 
 # Init Schema
 
 reactivo_schema = ReactivoSchema()
+reactivo_bajo_stock_schema = ReactivoBajoStockSchema()
 reactivos_schema = ReactivoSchema(many=True)
 
 materia_schema = MateriaSchema()
