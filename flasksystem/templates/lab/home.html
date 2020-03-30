@@ -40,7 +40,7 @@
                             <td>{{ quimico.materia.nombre }}</td>
                             <td>{{ quimico.materia.codigo }}</td>
                             <td>{{ quimico.materia.tipo }}</td>
-                            <td>{{ quimico.materia.cantidad }} {{ quimico.materia.medida.value }}</td>
+                            <td>{{ quimico.materia.cantidad }} {{ quimico.materia.medida }}</td>
                             <td class="text-right">
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_materia', materia_id=quimico.materia.id) }}">Ver</a>
                                 {% if user.area == 'Lab' %}
@@ -60,7 +60,7 @@
                             <td>{{ quimico.reactivo.nombre }}</td>
                             <td>{{ quimico.reactivo.codigo }}</td>
                             <td>{{ quimico.reactivo.tipo }}</td>
-                            <td>{{ quimico.reactivo.cantidad }} {{ quimico.reactivo.medida.value }}</td>
+                            <td>{{ quimico.reactivo.cantidad }} {{ quimico.reactivo.medida }}</td>
                             <td class="text-right">
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.lab_reactivo', reactivo_id=quimico.reactivo.id) }}">Ver</a>
                                 {% if user.area == 'Lab' %}

@@ -9,7 +9,7 @@
                 <h2 class="article-title"><a href="{{ url_for('reactivos.bod_reactivo', reactivo_id=reactivo.id) }}">{{ reactivo.nombre }}</a></h2>
             {% endif %}
             <p class="article-content">Codigo:   {{ reactivo.codigo }}</p>
-            <p class="article-content">Alerta Actual:    {{ reactivo.bajo_stock }} {{ reactivo.medida.value }}</p>
+            <p class="article-content">Alerta Actual:    {{ reactivo.bajo_stock }} {{ reactivo.medida }}</p>
         </div>
     </article>   
 

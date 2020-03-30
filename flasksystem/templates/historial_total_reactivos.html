@@ -8,9 +8,9 @@
         <td>{{ historial.reactivo.nombre }}</td>
         <td>{{ historial.reactivo.codigo }}</td>
         {% if historial.tipo == 'Entrada' %}
-            <td>+{{ historial.cantidad }} {{ historial.reactivo.medida.value }}</td>
+            <td>+{{ historial.cantidad }} {{ historial.reactivo.medida }}</td>
         {% else %}
-            <td>-{{ historial.cantidad }} {{ historial.reactivo.medida.value }}</td>
+            <td>-{{ historial.cantidad }} {{ historial.reactivo.medida }}</td>
         {% endif %}
         <td>{{ historial.user.username }} | {{ historial.user.email }}</td>
         <td>{{ historial.fecha_registro.strftime('%d-%m-%Y   %H:%M:%S') }}</td>

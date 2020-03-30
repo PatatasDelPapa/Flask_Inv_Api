@@ -12,7 +12,7 @@ from flasksystem.main.utils import check_bod, check_lab, check_only_bod, check_o
 from flasksystem.reactivos.utils import is_number
 from flasksystem.schema import (reactivo_schema, reactivos_schema, historial_reactivo_schema, historiales_reactivo_schema,
                                 quimico_schema, quimicos_schema, historial_quimico_schema, historiales_quimico_schema,
-                                reactivo_bajo_stock_schema)
+                                reactivo_bajo_stock_schema, materias_schema)
 from flasksystem.users.routes import token_required
 from marshmallow import ValidationError
 
@@ -63,7 +63,7 @@ def lab_alerta_reactivo(reactivo_id):
     # return render template alerta_reactivo.html
     return render_template('alerta_reactivo.html', form=form, legend='Modifica Alerta', area='Lab', reactivo=reactivo)
 
-@reactivos.route("/lab/home/reactivo")
+@reactivos.route("/lab/reactivo/home")
 @login_required
 def lab_home_reactivo():
     check_lab()
@@ -351,9 +351,9 @@ def lab_consulta(reactivo_id):
                 flag = False
                 break
         if flag:
-            flash(f"Es posible crear {form.cantidad.data} {reactivo.medida.value} de reactivo", 'info')
+            flash(f"Es posible crear {form.cantidad.data} {reactivo.medida} de reactivo", 'info')
         else:
-            flash(f'No es posible crear {form.cantidad.data} {reactivo.medida.value} de reactivo', 'warning')
+            flash(f'No es posible crear {form.cantidad.data} {reactivo.medida} de reactivo', 'warning')
         return redirect(url_for('reactivos.lab_consulta', reactivo_id = reactivo.id))
     return render_template('consulta.html', form=form, legend='Consulta', reactivo = reactivo, area='Lab')
 
@@ -404,7 +404,7 @@ def bod_alerta_reactivo(reactivo_id):
         return redirect(url_for('reactivos.bod_reactivo', reactivo_id=reactivo.id))
     return render_template('alerta_reactivo.html', form=form, legend='Modifica Alerta', area='Bod', reactivo=reactivo)
 
-@reactivos.route("/bod/home/reactivo")
+@reactivos.route("/bod/reactivo/home")
 @login_required
 def bod_home_reactivo():
     check_bod()
@@ -690,9 +690,9 @@ def bod_consulta(reactivo_id):
                 flag = False
                 break
         if flag:
-            flash(f"Es posible crear {form.cantidad.data} {reactivo.medida.value} de reactivo", 'info')
+            flash(f"Es posible crear {form.cantidad.data} {reactivo.medida} de reactivo", 'info')
         else:
-            flash(f'No es posible crear {form.cantidad.data} {reactivo.medida.value} de reactivo', 'warning')
+            flash(f'No es posible crear {form.cantidad.data} {reactivo.medida} de reactivo', 'warning')
         return redirect(url_for('reactivos.bod_consulta', reactivo_id = reactivo.id))
     return render_template('consulta.html', form=form, legend='Consulta', reactivo = reactivo, area='Bod')
 
@@ -716,16 +716,18 @@ def json_bod(usuario_actual):
 
 # --------------------------------SECTOR DE ROUTES API LAB--------------------------------------------------
 
-@reactivos.route("json/lab/reactivo/create", methods=['POST'])
+@reactivos.route("/json/lab/reactivo/create", methods=['POST'])
 @token_required
 def json_lab_new_reactivo(usuario_actual):
-    json_only_lab()
+    json_only_lab(usuario_actual)
+
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400
+        return jsonify({'mensaje': 'Invalid request'}), 400
 
     try:
         reactivo = reactivo_schema.load(json_data)
+
     except ValidationError as err:
         return jsonify(err.messages), 422
 
@@ -736,10 +738,10 @@ def json_lab_new_reactivo(usuario_actual):
     db.session.commit()
     return reactivo_schema.jsonify(reactivo)
 
-@reactivos.route("json/lab/reactivo/<int:reactivo_id>")
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>")
 @token_required
 def json_lab_reactivo(usuario_actual, reactivo_id):
-    json_lab()
+    json_lab(usuario_actual)
     reactivo = Reactivo.query.get(reactivo_id)
     if not reactivo:
         id = f"no existe reactivo con ID = {reactivo_id}"
@@ -750,31 +752,56 @@ def json_lab_reactivo(usuario_actual, reactivo_id):
     output = reactivo_schema.dump(reactivo)
     return output
 
-@reactivos.route("json/lab/reactivo/<int:reactivo_id>/alerta", methods=['POST'])
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/alerta", methods=['PUT'])
 @token_required
 def json_lab_alerta_reactivo(usuario_actual, reactivo_id):
-    json_only_lab()
+    json_only_lab(usuario_actual)
     reactivo = Reactivo.query.get(reactivo_id)
     if not reactivo:
         id = f"no existe reactivo con ID = {reactivo_id}"
         return jsonify({"error": id}), 404
+
     if reactivo.area != Area.Lab.value:
         return abort(403)
+
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400 
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    # try:
+    #     bajo_stock = request.json["bajo_stock"]
+    # except:
+    #     return jsonify({"mensaje" : "JSON Invalido"}), 422
+    # try:
+    #     int(bajo_stock)
+    # except:
+    #     return jsonify({"mensaje": "Ingresa un numero valido"}), 422
+    # if bajo_stock <= 0:
+    #     return jsonify({"mensaje": "Ingresa un numero mayor a 0"}), 422
+    
+    # reactivo.bajo_stock = bajo_stock
+
     try:
-        reactivo_bajo_stock_schema.load(reactivo, instance=Reactivo().query.get(reactivo_id), partial=True)
+        reactivo_bajo_stock_schema.load(json_data, instance=Reactivo().query.get(reactivo_id))
     except ValidationError as err:
-        return jsonify(err.messages), 422
+        return jsonify(err.messages)
 
     db.session.commit()
     return reactivo_schema.jsonify(reactivo)
 
-@reactivos.route("json/lab/reactivo/<int:reactivo_id>/add", methods=['POST'])
+@reactivos.route("/json/lab/reactivo/home")
+@token_required
+def json_lab_home_reactivo(usuario_actual):
+    json_lab(usuario_actual)
+    # reactivos = Reactivo.query.filter_by(area=Area.Lab).all() # Esta forma no tiene order_by
+    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Lab.value).all()
+    output = reactivos_schema.dump(reactivos)
+    return jsonify({"reactivos" : output})
+
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/add", methods=['POST'])
 @token_required
 def json_lab_add_reactivo(usuario_actual, reactivo_id):
-    json_only_lab()
+    json_only_lab(usuario_actual)
     reactivo = Reactivo.query.get(reactivo_id)
     if not reactivo:
         id = f"no existe reactivo con ID = {reactivo_id}"
@@ -785,19 +812,19 @@ def json_lab_add_reactivo(usuario_actual, reactivo_id):
 
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400 
+        return jsonify({'mensaje': 'Invalid request'}), 400 
 
     try:
         cantidad = request.json["cantidad"]
     except:
-        return jsonify({'message': 'json invalido'}), 422
+        return jsonify({'mensaje': 'json invalido'}), 422
     try:
         int(cantidad)
     except:
-        return jsonify({"message": "Ingresa un numero valido"}), 422
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
 
     if cantidad <= 0:
-        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
 
     try:
         observacion = request.json["observacion"]
@@ -811,11 +838,38 @@ def json_lab_add_reactivo(usuario_actual, reactivo_id):
     historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab.value)
     db.session.add(historial_quimico)
     db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
 
-@reactivos.route("json/lab/reactivo/<int:reactivo_id>/historial", methods=['POST'])
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/historial")
 @token_required
-def lab_historial_reactivo_especifico(usuario_actual, reactivo_id):
-    json_lab()
+def json_lab_historial_reactivo_especifico(usuario_actual, reactivo_id):
+    json_lab(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).all()
+    if not historiales:
+        return jsonify({'mensaje': 'Esta materia no tiene historiales'})
+    output = historiales_reactivo_schema.dump(historiales)
+    return jsonify({'historiales': output})
+
+@reactivos.route("/json/lab/reactivo/historial")
+@token_required
+def json_lab_historial_reactivos(usuario_actual):
+    json_lab(usuario_actual)
+    historiales = HistorialReactivos.query.filter_by(area=Area.Lab.value).all()
+    output = historiales_reactivo_schema.dump(historiales)
+    return jsonify({"historiales": output})
+
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/reduce", methods=['PUT'])
+@token_required
+def json_lab_reduce_reactivo(usuario_actual, reactivo_id):
+    json_only_lab(usuario_actual)
     reactivo = Reactivo.query.get(reactivo_id)
     if not reactivo:
         id = f"no existe reactivo con ID = {reactivo_id}"
@@ -826,23 +880,642 @@ def lab_historial_reactivo_especifico(usuario_actual, reactivo_id):
 
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400 
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+        lote = request.json["lote"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+    if reactivo.cantidad - cantidad < 0:
+        descripcion = f"la cantidad ingresada supera al stock actual de este reactivo ({reactivo.cantidad})"
+        return jsonify({"error": descripcion}), 422
+
+    reactivo.cantidad -= cantidad
+    historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, lote=lote, 
+                                    reactivo=reactivo, user=usuario_actual, tipo='Salida', area=Area.Lab.value)
+    db.session.add(historial)
+    db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Lab.value)
+    db.session.add(historial_quimico)
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/delete", methods=['DELETE'])
+@token_required
+def json_lab_delete_reactivo(usuario_actual, reactivo_id):
+    json_only_lab(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    historiales = HistorialReactivos.query.filter_by(reactivo_id=reactivo_id).all()
+    quimicos = Quimico.query.filter_by(reactivo_id=reactivo_id).all()
+    formulas = Formula.query.filter_by(reactivo_id=reactivo_id).all()
+    # Eliminar Tablas dependientes de reactivo
+    for historial in historiales:
+        q_historiales = HistorialQuimicos.query.filter_by(reactivo_id=historial.id).all()
+        for q_historial in q_historiales:
+            db.session.delete(q_historial)
+        db.session.delete(historial)
+    for quimico in quimicos:
+        db.session.delete(quimico)
+    for formula in formulas:
+        Ingrediente.query.filter_by(formula_id = formula.id).delete()
+        db.session.delete(formula)
+    db.session.delete(reactivo)
+    db.session.commit()
+    return jsonify({"success": "se ha eliminado correctamente el reactivo"})
+
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/producir", methods=['POST'])
+@token_required
+def json_lab_entrada_reactivo(usuario_actual, reactivo_id):
+    json_only_lab(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404    
+
+    if reactivo.area != Area.Lab.value:
+        return abort(403)
+
+    # print(reactivo.formula)
+    if not reactivo.tiene_formula:
+        return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+    
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+        nro_analisis = request.json["nro_analisis"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+        int(nro_analisis)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad y nro_analisis validos"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+
+    formula = reactivo.formula
+    ingredientes = Ingrediente.query.filter_by(formula_id = formula.id).all() 
+    for ingrediente in ingredientes:
+        if ingrediente.ratio == 0:
+            Ingrediente.query.filter_by(formula_id=formula.id).delete()
+            db.session.delete(formula)
+            db.session.commit()
+            return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    ingredientes = Ingrediente.query.filter_by(formula_id=formula.id)
+    flag = True
+    for assoc in ingredientes:
+        if (assoc.materia.cantidad - cantidad * assoc.ratio) < 0:
+            flag = False
+            break
+    if flag:
+        
+        correlativo = BodCorr.query.first()
+        if correlativo:
+            correlativo.nro += 1 
+            db.session.commit()
+        else:
+            new_correlativo = BodCorr()
+            db.session.add(new_correlativo)
+            db.session.commit()
+
+        last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Lab.value).order_by(HistorialReactivos.id.desc()).first()
+        año_actual = datetime.utcnow().strftime("%y")
+        if last:
+            # print("EXISTE LAST")
+            año_anterior = last.fecha_registro.strftime("%y")
+            if año_anterior != año_actual:
+                correlativo = BodCorr.query.first()
+                # print("LOS AÑOS SON DIFERENTES")
+                if correlativo:
+                    correlativo.nro = 1
+                    db.session.commit()
+                else:
+                    new_correlativo = BodCorr()
+                    db.session.add(new_correlativo)
+                    db.session.commit()
+
+        correlativo = BodCorr.query.first()
+        nro_correlativo = f'{correlativo.nro:04}'
+        nro_analisis = f'{nro_analisis:04}'
+        lote = 'Q'+año_actual+nro_correlativo+nro_analisis
+                    
+        for assoc in ingredientes:
+            # print(assoc.materia.cantidad)
+            # print("-")
+            # print(assoc.ratio)
+            # print(assoc.materia.cantidad - assoc.ratio)
+            assoc.materia.cantidad -= (cantidad * assoc.ratio)
+            historial = HistorialMaterias(observacion=f"Produccion de reactivo [{reactivo.id}, {reactivo.nombre}]", 
+                                            cantidad=cantidad*assoc.ratio, materia=assoc.materia, 
+                                            user=usuario_actual, tipo='Producción', area='Lab') # Quizas cambiar el tipo
+            db.session.add(historial)
+            db.session.commit()
+            historial_quimico = HistorialQuimicos(tipo='Materia', historial_materia = historial, 
+                                                    fecha_registro = historial.fecha_registro, area='Lab')
+            db.session.add(historial_quimico)
+            db.session.commit()
+        reactivo.cantidad += cantidad
+        historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, 
+                                        reactivo=reactivo, user=current_user, tipo='Produccion', area='Lab', lote=lote) # Quizas cambiar el tipo
+        db.session.add(historial)
+        db.session.commit() 
+        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo = historial, 
+                                                fecha_registro = historial.fecha_registro, area='Lab')
+        db.session.add(historial_quimico)
+        db.session.commit()
+        descripcion = f"Se ha producido con exito {cantidad} {reactivo.medida} de {reactivo.nombre}"
+        return jsonify({"success": descripcion})
+    else:
+        return jsonify({"error": "No es posible producir esta cantidad de reactivo debido a que la cantidad ingresada supera al stock de las materias"})
+
+@reactivos.route("/json/lab/reactivo/<int:reactivo_id>/consulta", methods=['POST'])
+@token_required
+def json_lab_consulta(usuario_actual, reactivo_id):
+    json_lab(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404    
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    if not reactivo.tiene_formula:
+        return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    formula = reactivo.formula
+    ingredientes = Ingrediente.query.filter_by(formula_id = formula.id).all() 
+    for ingrediente in ingredientes:
+        if ingrediente.ratio == 0:
+            Ingrediente.query.filter_by(formula_id = formula.id).delete()
+            db.session.delete(formula)
+            db.session.commit()
+            return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    flag = True
+    for assoc in ingredientes:
+        if (assoc.materia.cantidad - cantidad * assoc.ratio) < 0:
+            flag = False
+            break
+    if flag:
+        descripcion = f"Es posible crear {cantidad} {reactivo.medida} de reactivo"
+        return jsonify({"mensaje": descripcion})
+    else:
+        descripcion = f'No es posible crear {cantidad} {reactivo.medida} de reactivo'
+        return jsonify({"mensaje": descripcion})
+# ----------------------------------------------------------------------------------------------------------
+
+
+# --------------------------------SECTOR DE ROUTES API BOD--------------------------------------------------
+
+@reactivos.route("/json/bod/reactivo/create", methods=['POST'])
+@token_required
+def json_bod_new_reactivo(usuario_actual):
+    json_only_bod(usuario_actual)
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400
+
+    try:
+        reactivo = reactivo_schema.load(json_data)
+
+    except ValidationError as err:
+        return jsonify(err.messages), 422
+
+    db.session.add(reactivo)
+    db.session.commit()
+    quimico = Quimico(tipo='Reactivo', reactivo=reactivo, area=Area.Bod.value)
+    db.session.add(quimico)
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>")
+@token_required
+def json_bod_reactivo(usuario_actual, reactivo_id):
+    json_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    output = reactivo_schema.dump(reactivo)
+    return output
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/alerta", methods=['PUT'])
+@token_required
+def json_bod_alerta_reactivo(usuario_actual, reactivo_id):
+    json_only_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    # try:
+    #     bajo_stock = request.json["bajo_stock"]
+    # except:
+    #     return jsonify({"mensaje" : "JSON Invalido"}), 422
+    # try:
+    #     int(bajo_stock)
+    # except:
+    #     return jsonify({"mensaje": "Ingresa un numero valido"}), 422
+    # if bajo_stock <= 0:
+    #     return jsonify({"mensaje": "Ingresa un numero mayor a 0"}), 422
+    
+    # reactivo.bajo_stock = bajo_stock
+
+    try:
+        reactivo_bajo_stock_schema.load(json_data, instance=Reactivo().query.get(reactivo_id))
+    except ValidationError as err:
+        return jsonify(err.messages)
+
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("/json/bod/reactivo/home")
+@token_required
+def json_bod_home_reactivo(usuario_actual):
+    json_bod(usuario_actual)
+    # reactivos = Reactivo.query.filter_by(area=Area.bod).all() # Esta forma no tiene order_by
+    reactivos = db.session.query(Reactivo).filter(Reactivo.area == Area.Bod.value).all()
+    output = reactivos_schema.dump(reactivos)
+    return jsonify({"reactivos" : output})
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/add", methods=['POST'])
+@token_required
+def json_bod_add_reactivo(usuario_actual, reactivo_id):
+    json_only_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+    reactivo.cantidad += cantidad
+    historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, reactivo=reactivo, user=usuario_actual, tipo='Entrada', area=Area.Bod.value)
+    db.session.add(historial)
+    db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod.value)
+    db.session.add(historial_quimico)
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/historial")
+@token_required
+def json_bod_historial_reactivo_especifico(usuario_actual, reactivo_id):
+    json_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
 
     historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).all()
     if not historiales:
-        return jsonify({'message': 'Esta materia no tiene historiales'})
+        return jsonify({'mensaje': 'Esta materia no tiene historiales'})
     output = historiales_reactivo_schema.dump(historiales)
     return jsonify({'historiales': output})
 
-# ----------------------------------------------------------------------------------------------------------
+@reactivos.route("/json/bod/reactivo/historial")
+@token_required
+def json_bod_historial_reactivos(usuario_actual):
+    json_bod(usuario_actual)
+    historiales = HistorialReactivos.query.filter_by(area=Area.Bod.value).all()
+    output = historiales_reactivo_schema.dump(historiales)
+    return jsonify({"historiales": output})
 
-@reactivos.route("/lab/reactivo/<int:reactivo_id>/historial", methods=['GET', 'POST'])
-@login_required
-def lab_historial_reactivo_especifico(reactivo_id):
-    check_lab()
-    reactivo = Reactivo.query.get_or_404(reactivo_id)
-    if reactivo.area != Area.Lab.value:
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/reduce", methods=['PUT'])
+@token_required
+def json_bod_reduce_reactivo(usuario_actual, reactivo_id):
+    json_only_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Bod.value:
         return abort(403)
-    historiales = HistorialReactivos.query.filter_by(reactivo=reactivo).order_by(HistorialReactivos.fecha_registro.desc()).all()
-    return render_template('historial_reactivo.html', title='Menu Historial Reactivos', legend='Menu Historial Reactivo', 
-                            historiales=historiales, reactivo=reactivo, area='Lab')
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+        lote = request.json["lote"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+    if reactivo.cantidad - cantidad < 0:
+        descripcion = f"la cantidad ingresada supera al stock actual de este reactivo ({reactivo.cantidad})"
+        return jsonify({"error": descripcion}), 422
+
+    reactivo.cantidad -= cantidad
+    historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, lote=lote, 
+                                    reactivo=reactivo, user=usuario_actual, tipo='Salida', area=Area.Bod.value)
+    db.session.add(historial)
+    db.session.commit()
+    historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo=historial, fecha_registro=historial.fecha_registro, area=Area.Bod.value)
+    db.session.add(historial_quimico)
+    db.session.commit()
+    return reactivo_schema.jsonify(reactivo)
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/delete", methods=['DELETE'])
+@token_required
+def json_bod_delete_reactivo(usuario_actual, reactivo_id):
+    json_only_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    historiales = HistorialReactivos.query.filter_by(reactivo_id=reactivo_id).all()
+    quimicos = Quimico.query.filter_by(reactivo_id=reactivo_id).all()
+    formulas = Formula.query.filter_by(reactivo_id=reactivo_id).all()
+    # Eliminar Tablas dependientes de reactivo
+    for historial in historiales:
+        q_historiales = HistorialQuimicos.query.filter_by(reactivo_id=historial.id).all()
+        for q_historial in q_historiales:
+            db.session.delete(q_historial)
+        db.session.delete(historial)
+    for quimico in quimicos:
+        db.session.delete(quimico)
+    for formula in formulas:
+        Ingrediente.query.filter_by(formula_id = formula.id).delete()
+        db.session.delete(formula)
+    db.session.delete(reactivo)
+    db.session.commit()
+    return jsonify({"success": "se ha eliminado correctamente el reactivo"})
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/producir", methods=['POST'])
+@token_required
+def json_bod_entrada_reactivo(usuario_actual, reactivo_id):
+    json_only_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404    
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    # print(reactivo.formula)
+    if not reactivo.tiene_formula:
+        return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+    
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+        nro_analisis = request.json["nro_analisis"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+        int(nro_analisis)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad y nro_analisis validos"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    try:
+        observacion = request.json["observacion"]
+    except:
+        observacion = ""
+
+
+    formula = reactivo.formula
+    ingredientes = Ingrediente.query.filter_by(formula_id = formula.id).all() 
+    for ingrediente in ingredientes:
+        if ingrediente.ratio == 0:
+            Ingrediente.query.filter_by(formula_id=formula.id).delete()
+            db.session.delete(formula)
+            db.session.commit()
+            return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    ingredientes = Ingrediente.query.filter_by(formula_id=formula.id)
+    flag = True
+    for assoc in ingredientes:
+        if (assoc.materia.cantidad - cantidad * assoc.ratio) < 0:
+            flag = False
+            break
+    if flag:
+        
+        correlativo = BodCorr.query.first()
+        if correlativo:
+            correlativo.nro += 1 
+            db.session.commit()
+        else:
+            new_correlativo = BodCorr()
+            db.session.add(new_correlativo)
+            db.session.commit()
+
+        last = db.session.query(HistorialReactivos).filter(HistorialReactivos.area == Area.Bod.value).order_by(HistorialReactivos.id.desc()).first()
+        año_actual = datetime.utcnow().strftime("%y")
+        if last:
+            # print("EXISTE LAST")
+            año_anterior = last.fecha_registro.strftime("%y")
+            if año_anterior != año_actual:
+                correlativo = BodCorr.query.first()
+                # print("LOS AÑOS SON DIFERENTES")
+                if correlativo:
+                    correlativo.nro = 1
+                    db.session.commit()
+                else:
+                    new_correlativo = BodCorr()
+                    db.session.add(new_correlativo)
+                    db.session.commit()
+
+        correlativo = BodCorr.query.first()
+        nro_correlativo = f'{correlativo.nro:04}'
+        nro_analisis = f'{nro_analisis:04}'
+        lote = 'Q'+año_actual+nro_correlativo+nro_analisis
+                    
+        for assoc in ingredientes:
+            # print(assoc.materia.cantidad)
+            # print("-")
+            # print(assoc.ratio)
+            # print(assoc.materia.cantidad - assoc.ratio)
+            assoc.materia.cantidad -= (cantidad * assoc.ratio)
+            historial = HistorialMaterias(observacion=f"Produccion de reactivo [{reactivo.id}, {reactivo.nombre}]", 
+                                            cantidad=cantidad*assoc.ratio, materia=assoc.materia, 
+                                            user=usuario_actual, tipo='Producción', area='bod') # Quizas cambiar el tipo
+            db.session.add(historial)
+            db.session.commit()
+            historial_quimico = HistorialQuimicos(tipo='Materia', historial_materia = historial, 
+                                                    fecha_registro = historial.fecha_registro, area='bod')
+            db.session.add(historial_quimico)
+            db.session.commit()
+        reactivo.cantidad += cantidad
+        historial = HistorialReactivos(observacion=observacion, cantidad=cantidad, 
+                                        reactivo=reactivo, user=current_user, tipo='Produccion', area='bod', lote=lote) # Quizas cambiar el tipo
+        db.session.add(historial)
+        db.session.commit() 
+        historial_quimico = HistorialQuimicos(tipo='Reactivo', historial_reactivo = historial, 
+                                                fecha_registro = historial.fecha_registro, area='bod')
+        db.session.add(historial_quimico)
+        db.session.commit()
+        descripcion = f"Se ha producido con exito {cantidad} {reactivo.medida} de {reactivo.nombre}"
+        return jsonify({"success": descripcion})
+    else:
+        return jsonify({"error": "No es posible producir esta cantidad de reactivo debido a que la cantidad ingresada supera al stock de las materias"})
+
+@reactivos.route("/json/bod/reactivo/<int:reactivo_id>/consulta", methods=['POST'])
+@token_required
+def json_bod_consulta(usuario_actual, reactivo_id):
+    json_bod(usuario_actual)
+    reactivo = Reactivo.query.get(reactivo_id)
+
+    if not reactivo:
+        id = f"no existe reactivo con ID = {reactivo_id}"
+        return jsonify({"error": id}), 404    
+
+    if reactivo.area != Area.Bod.value:
+        return abort(403)
+
+    if not reactivo.tiene_formula:
+        return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'mensaje': 'Invalid request'}), 400 
+
+    try:
+        cantidad = request.json["cantidad"]
+    except:
+        return jsonify({'mensaje': 'json invalido'}), 422
+    try:
+        int(cantidad)
+    except:
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
+
+    if cantidad <= 0:
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
+
+    formula = reactivo.formula
+    ingredientes = Ingrediente.query.filter_by(formula_id = formula.id).all() 
+    for ingrediente in ingredientes:
+        if ingrediente.ratio == 0:
+            Ingrediente.query.filter_by(formula_id = formula.id).delete()
+            db.session.delete(formula)
+            db.session.commit()
+            return jsonify({"error": "Este reactivo no tiene una formula asociada"}), 422
+
+    flag = True
+    for assoc in ingredientes:
+        if (assoc.materia.cantidad - cantidad * assoc.ratio) < 0:
+            flag = False
+            break
+    if flag:
+        descripcion = f"Es posible crear {cantidad} {reactivo.medida} de reactivo"
+        return jsonify({"mensaje": descripcion})
+    else:
+        descripcion = f'No es posible crear {cantidad} {reactivo.medida} de reactivo'
+        return jsonify({"mensaje": descripcion})
+
+# ----------------------------------------------------------------------------------------------------------

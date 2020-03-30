@@ -12,7 +12,9 @@ def validate_positive(num):
 class ReactivoSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Reactivo
-    
+        load_instance = True
+        # include_relationships = True
+
     id = ma.auto_field()
     nombre = ma.auto_field()
     codigo = ma.auto_field()
@@ -26,6 +28,7 @@ class MateriaSchema(ma.SQLAlchemySchema):
         model = Materia
         load_instance = True
         # include_fk = True
+        # include_relationships = True
 
     id = ma.auto_field()
     nombre = ma.auto_field()
@@ -75,6 +78,7 @@ class ReactivoBajoStockSchema(ma.SQLAlchemySchema):
         # include_fk = True
 
     bajo_stock = ma.auto_field(validate=validate_positive)
+
 
 # Init Schema
 

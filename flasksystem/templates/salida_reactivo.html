@@ -11,11 +11,11 @@
                         {% if area == 'Lab' %}
                             <h2 class="article-title"><a href="{{ url_for('reactivos.lab_reactivo', reactivo_id=reactivo.id) }}">{{ reactivo.nombre }}</a></h2>
                             <p class="article-content">Codigo:   {{ reactivo.codigo }}</p>
-                            <p class="article-content">Cantidad Actual:    {{ reactivo.cantidad }} {{ reactivo.medida.value }}</p>
+                            <p class="article-content">Cantidad Actual:    {{ reactivo.cantidad }} {{ reactivo.medida }}</p>
                         {% elif area == 'Bod' %}
                             <h2 class="article-title"><a href="{{ url_for('reactivos.bod_reactivo', reactivo_id=reactivo.id) }}">{{ reactivo.nombre }}</a></h2>
                             <p class="article-content">Codigo:   {{ reactivo.codigo }}</p>
-                            <p class="article-content">Cantidad Actual:    {{ reactivo.cantidad }} {{ reactivo.medida.value }}</p>
+                            <p class="article-content">Cantidad Actual:    {{ reactivo.cantidad }} {{ reactivo.medida }}</p>
                         {% endif %}
 
                     </div>

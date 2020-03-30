@@ -6,7 +6,7 @@
                     <h2 class="article-title"><a href="{{ url_for('materias.lab_materia', materia_id=materia.id) }}">{{ materia.nombre }}</a></h2>
                     <p class="article-content">Id:   {{ materia.id }}</p>
                     <p class="article-content">Codigo:   {{ materia.codigo }}</p>
-                    <p class="article-content">Cantidad Actual:    {{ materia.cantidad }} {{ materia.medida.value }}</p>
+                    <p class="article-content">Cantidad Actual:    {{ materia.cantidad }} {{ materia.medida }}</p>
                 </div>
                 </article>
         {% elif area == 'Bod' %}
@@ -15,7 +15,7 @@
                     <h2 class="article-title"><a href="{{ url_for('materias.bod_materia', materia_id=materia.id) }}">{{ materia.nombre }}</a></h2>
                     <p class="article-content">Id:   {{ materia.id }}</p>
                     <p class="article-content">Codigo:   {{ materia.codigo }}</p>
-                    <p class="article-content">Cantidad Actual:    {{ materia.cantidad }} {{ materia.medida.value }}</p>
+                    <p class="article-content">Cantidad Actual:    {{ materia.cantidad }} {{ materia.medida }}</p>
                 </div>
                 </article>
         {% endif %}
@@ -44,9 +44,9 @@
                         <td>{{ historial.materia.nombre }}</td>
                         <td>{{ historial.materia.codigo }}</td>
                         {% if historial.tipo == 'Entrada' %}
-                            <td>+{{ historial.cantidad }} {{ historial.materia.medida.value }}</td>
+                            <td>+{{ historial.cantidad }} {{ historial.materia.medida }}</td>
                         {% else %}
-                            <td>-{{ historial.cantidad }} {{ historial.materia.medida.value }}</td>
+                            <td>-{{ historial.cantidad }} {{ historial.materia.medida }}</td>
                         {% endif %}
                         <td>{{ historial.user.username }} | {{ historial.user.email }}</td>
                         <td>{{ historial.fecha_registro.strftime('%d-%m-%Y   %H:%M:%S') }}</td>

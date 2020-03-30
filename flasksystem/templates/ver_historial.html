@@ -14,9 +14,9 @@
                     <td>{{ historial.historial_materia.materia.codigo }}</td>
                     <td>{{ historial.tipo }}</td>
                     {% if historial.historial_materia.tipo == 'Entrada' %}
-                        <td>+{{ historial.historial_materia.cantidad }} {{ historial.historial_materia.materia.medida.value }}</td>
+                        <td>+{{ historial.historial_materia.cantidad }} {{ historial.historial_materia.materia.medida }}</td>
                     {% else %}
-                        <td>-{{ historial.historial_materia.cantidad }} {{ historial.historial_materia.materia.medida.value }}</td>
+                        <td>-{{ historial.historial_materia.cantidad }} {{ historial.historial_materia.materia.medida }}</td>
                     {% endif %}
                     <td>{{ historial.historial_materia.user.username }} | {{ historial.historial_materia.user.email }}</td>
                     <td>{{ historial.historial_materia.fecha_registro.strftime('%d-%m-%Y   %H:%M:%S') }}</td>
@@ -43,9 +43,9 @@
                         <td>{{ historial.historial_reactivo.reactivo.codigo }}</td>
                         <td>{{ historial.tipo }}</td>
                         {% if historial.historial_reactivo.tipo == 'Salida' %}
-                            <td>-{{ historial.historial_reactivo.cantidad }} {{ historial.historial_reactivo.reactivo.medida.value }}</td>
+                            <td>-{{ historial.historial_reactivo.cantidad }} {{ historial.historial_reactivo.reactivo.medida }}</td>
                         {% else %}
-                            <td>+{{ historial.historial_reactivo.cantidad }} {{ historial.historial_reactivo.reactivo.medida.value }}</td>
+                            <td>+{{ historial.historial_reactivo.cantidad }} {{ historial.historial_reactivo.reactivo.medida }}</td>
                         {% endif %}
                         <td>{{ historial.historial_reactivo.user.username }} | {{ historial.historial_reactivo.user.email }}</td>
                         <td>{{ historial.historial_reactivo.fecha_registro.strftime('%d-%m-%Y   %H:%M:%S') }}</td>

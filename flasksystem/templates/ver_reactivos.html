@@ -54,7 +54,7 @@
                         <td>{{ reactivo.nombre }}</td>
                         <td>{{ reactivo.codigo }}</td>
                         <td>{{ reactivo.tipo }}</td>
-                        <td>{{ reactivo.cantidad }} {{ reactivo.medida.value }}</td>
+                        <td>{{ reactivo.cantidad }} {{ reactivo.medida }}</td>
                         <td class="text-right">
                             {% if area == 'Lab' %}
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('reactivos.lab_reactivo', reactivo_id=reactivo.id) }}">Ver</a>

@@ -7,7 +7,9 @@ from flask_login import login_user, current_user, logout_user, login_required
 from flasksystem import db, bcrypt
 from flasksystem.users.forms import RegistrationForm, LoginForm, UpdateAccountForm, UpdatePasswordForm
 from flasksystem.models import User
+from flasksystem.schema import user_schema
 from functools import wraps
+from sqlalchemy import or_
 
 users = Blueprint('users', __name__)
 
@@ -20,13 +22,13 @@ def token_required(f):
             token = request.headers['x-access-token']
         
         if not token:
-            return jsonify({'message': 'No se encuentra el token!'}), 401
+            return jsonify({'mensaje': 'No se encuentra el token!'}), 401
         
         try:
             data = jwt.decode(token, os.environ.get('SECRET_KEY'))
             usuario_actual = User.query.filter_by(id=data['id']).first()
         except:
-            return jsonify({'message': 'El token es invalido!'}), 401
+            return jsonify({'mensaje': 'El token es invalido!'}), 401
 
         return f(usuario_actual, *args, **kwargs)
         
@@ -99,7 +101,7 @@ def password():
 # ---------------------------------------------------------------------------------------------
 
 
-@users.route("/json/login")
+@users.route("/json/login", methods=['POST'])
 def json_login():
     auth = request.authorization
 
@@ -118,14 +120,17 @@ def json_login():
     return make_response('No se pudo verificar', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
 
 @users.route("/json/register", methods=['POST'])
-def register():
+def json_register():
     try:
         username = request.json['username']
         email = request.json['email']
         password = request.json['password']
         area = request.json['area']
     except:
-        return jsonify({"message": "Json invalido"}), 422
+        return jsonify({"mensaje": "Json invalido"}), 422
+    exist = db.session.query(User).filter(or_(User.username==username, User.email==email)).first()
+    if exist:
+        return jsonify({"mensaje": "Un usuario con el username o email ingresado ya esta registrado"})
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     user = User(username=username, email=email.lower(), password=hashed_password, area=area)
     db.session.add(user)

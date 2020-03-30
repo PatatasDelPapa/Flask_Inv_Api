@@ -53,7 +53,7 @@
                         <td>{{ materia.nombre }}</td>
                         <td>{{ materia.codigo }}</td>
                         <td>{{ materia.tipo }}</td>
-                        <td>{{ materia.cantidad }} {{ materia.medida.value }}</td>
+                        <td>{{ materia.cantidad }} {{ materia.medida }}</td>
                         <td class="text-right">
                             {% if area == 'Lab' %}
                                 <a class="btn btn-primary btn-sm mt-1 mb-1 mr-1" href="{{ url_for('materias.lab_materia', materia_id=materia.id) }}">Ver</a>

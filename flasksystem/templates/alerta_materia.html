@@ -9,7 +9,7 @@
                 <h2 class="article-title"><a href="{{ url_for('materias.bod_materia', materia_id=materia.id) }}">{{ materia.nombre }}</a></h2>
             {% endif %}
             <p class="article-content">Codigo:   {{ materia.codigo }}</p>
-            <p class="article-content">Alerta Actual:    {{ materia.bajo_stock }} {{ materia.medida.value }}</p>
+            <p class="article-content">Alerta Actual:    {{ materia.bajo_stock }} {{ materia.medida }}</p>
         </div>
     </article>   
 

@@ -328,7 +328,7 @@ def json_lab_new_materia(usuario_actual):
     json_only_lab(usuario_actual)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400
+        return jsonify({'mensaje': 'Invalid request'}), 400
 
     try:
         materia = materia_schema.load(json_data)
@@ -348,7 +348,7 @@ def json_lab_new_materia(usuario_actual):
 @token_required
 def json_lab_materia(usuario_actual, materia_id):
     json_lab(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -363,7 +363,7 @@ def json_lab_materia(usuario_actual, materia_id):
 @token_required
 def json_lab_alerta_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -372,7 +372,7 @@ def json_lab_alerta_materia(usuario_actual, materia_id):
         return abort(403)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400 
+        return jsonify({'mensaje': 'Invalid request'}), 400 
     try:
         materia_bajo_stock_schema.load(json_data, instance=Materia().query.get(materia_id), partial=True)
     except ValidationError as err:
@@ -394,7 +394,7 @@ def json_lab_home_materia(usuario_actual):
 @token_required
 def json_lab_add_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -403,18 +403,18 @@ def json_lab_add_materia(usuario_actual, materia_id):
         return abort(403)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400
+        return jsonify({'mensaje': 'Invalid request'}), 400
 
     try:
         cantidad = request.json["cantidad"]
     except:
-        return jsonify({'message': 'json invalido'}), 422
+        return jsonify({'mensaje': 'json invalido'}), 422
     try:
         int(cantidad)
     except:
-        return jsonify({"message": "Ingresa un numero valido"}), 422
+        return jsonify({"mensaje": "Ingresa un numero valido"}), 422
     if cantidad <= 0:
-        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+        return jsonify({"mensaje": "Ingresa un numero mayor a 0"}), 422
 
     try:
         observacion = request.json["observacion"]
@@ -434,7 +434,7 @@ def json_lab_add_materia(usuario_actual, materia_id):
 @token_required
 def json_lab_reduce_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -444,13 +444,13 @@ def json_lab_reduce_materia(usuario_actual, materia_id):
     try:
         cantidad = request.json["cantidad"]
     except:
-        return jsonify({'message': 'json invalido'}), 400
+        return jsonify({'mensaje': 'json invalido'}), 400
     try:
         int(cantidad)
     except:
-        return jsonify({"message": "Ingresa un numero valido"}), 422
+        return jsonify({"mensaje": "Ingresa un numero valido"}), 422
     if cantidad <= 0:
-        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+        return jsonify({"mensaje": "Ingresa un numero mayor a 0"}), 422
 
     try:
         observacion = request.json["observacion"]
@@ -474,7 +474,7 @@ def json_lab_reduce_materia(usuario_actual, materia_id):
 @token_required
 def json_lab_delete_materia(usuario_actual, materia_id):
     json_only_lab(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -503,7 +503,7 @@ def json_lab_delete_materia(usuario_actual, materia_id):
 @materias.route("/json/lab/materia/<int:materia_id>/historial")
 @token_required
 def json_lab_materia_historial(usuario_actual, materia_id):
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -511,9 +511,9 @@ def json_lab_materia_historial(usuario_actual, materia_id):
     if materia.area != Area.Lab.value:
         return abort(403)
     historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
-    if not historiales:
-        return jsonify({'message': 'Esta materia no tiene historiales'})
-    output = historiales_materia_schema.dump(historiales)
+    # if not historiales:
+    #     return jsonify({'mensaje': 'Esta materia no tiene historiales'})
+    # output = historiales_materia_schema.dump(historiales)
     return jsonify({'historiales': output})
 
 # --------------------------------SECTOR DE ROUTES API BOD--------------------------------------------------
@@ -524,7 +524,7 @@ def json_bod_new_materia(usuario_actual):
     json_only_bod(usuario_actual)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400
+        return jsonify({'mensaje': 'Invalid request'}), 400
 
     try:
         materia = materia_schema.load(json_data)
@@ -544,7 +544,7 @@ def json_bod_new_materia(usuario_actual):
 @token_required
 def json_bod_materia(usuario_actual, materia_id):
     json_bod(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -559,7 +559,7 @@ def json_bod_materia(usuario_actual, materia_id):
 @token_required
 def json_bod_alerta_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -568,7 +568,7 @@ def json_bod_alerta_materia(usuario_actual, materia_id):
         return abort(403)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400 
+        return jsonify({'mensaje': 'Invalid request'}), 400 
     try:
         materia_bajo_stock_schema.load(json_data, instance=Materia().query.get(materia_id), partial=True)
     except ValidationError as err:
@@ -599,18 +599,18 @@ def json_bod_add_materia(usuario_actual, materia_id):
         return abort(403)
     json_data = request.get_json()
     if not json_data:
-        return jsonify({'message': 'Invalid request'}), 400
+        return jsonify({'mensaje': 'Invalid request'}), 400
 
     try:
         cantidad = request.json["cantidad"]
     except:
-        return jsonify({'message': 'json invalido'}), 422
+        return jsonify({'mensaje': 'json invalido'}), 422
     try:
         int(cantidad)
     except:
-        return jsonify({"message": "Ingresa un numero valido"}), 422
+        return jsonify({"mensaje": "Ingresa un numero valido"}), 422
     if cantidad <= 0:
-        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+        return jsonify({"mensaje": "Ingresa un numero mayor a 0"}), 422
 
     try:
         observacion = request.json["observacion"]
@@ -630,7 +630,7 @@ def json_bod_add_materia(usuario_actual, materia_id):
 @token_required
 def json_bod_reduce_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -640,13 +640,13 @@ def json_bod_reduce_materia(usuario_actual, materia_id):
     try:
         cantidad = request.json["cantidad"]
     except:
-        return jsonify({'message': 'json invalido'}), 400
+        return jsonify({'mensaje': 'json invalido'}), 400
     try:
         int(cantidad)
     except:
-        return jsonify({"message": "Ingresa un numero valido"}), 422
+        return jsonify({"mensaje": "Ingresa una cantidad valida"}), 422
     if cantidad <= 0:
-        return jsonify({"message": "Ingresa un numero mayor a 0"}), 422
+        return jsonify({"mensaje": "La cantidad ingresada debe ser mayor a 0"}), 422
 
     try:
         observacion = request.json["observacion"]
@@ -670,7 +670,7 @@ def json_bod_reduce_materia(usuario_actual, materia_id):
 @token_required
 def json_bod_delete_materia(usuario_actual, materia_id):
     json_only_bod(usuario_actual)
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -700,7 +700,7 @@ def json_bod_delete_materia(usuario_actual, materia_id):
 @materias.route("/json/bod/materia/<int:materia_id>/historial")
 @token_required
 def json_bod_materia_historial(usuario_actual, materia_id):
-    materia = Materia.query.get(materia_id).first()
+    materia = Materia.query.get(materia_id)
     if not materia:
         id = f"no existe materia con ID = {materia_id}"
         return jsonify({"error": id}), 404
@@ -708,8 +708,8 @@ def json_bod_materia_historial(usuario_actual, materia_id):
     if materia.area != Area.Bod.value:
         return abort(403)
     historiales = HistorialMaterias.query.filter_by(materia_id=materia_id).all()
-    if not historiales:
-        return jsonify({'message': 'Esta materia no tiene historiales'})
+    # if not historiales:
+    #     return jsonify({'mensaje': 'Esta materia no tiene historiales'})
     output = historiales_materia_schema.dump(historiales)
     return jsonify({'historiales': output})
 
